@@ -9,7 +9,6 @@ import {
   FolderTree,
   FileText,
   Users,
-  BarChart3,
   Settings,
   LogOut,
   ChevronLeft,
@@ -19,7 +18,7 @@ import {
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   // eslint-disable-next-line no-unused-vars
   const { theme } = useTheme();
   const location = useLocation();
@@ -47,8 +46,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: [ROLES.ADMIN, ROLES.MANAGER],
       subItems: [
         { title: 'All Products', path: '/dashboard/products' },
-        { title: 'Add New', path: '/dashboard/products/new' },
-        { title: 'Categories', path: '/dashboard/categories' },
+        { title: 'Add New', path: '/dashboard/products/add' },
       ],
     },
     {
@@ -62,22 +60,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       icon: FileText,
       path: '/dashboard/quotes',
       roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.SALES],
-      subItems: [
-        { title: 'All Quotes', path: '/dashboard/quotes' },
-        { title: 'Pending', path: '/dashboard/quotes?status=pending' },
-        { title: 'Approved', path: '/dashboard/quotes?status=approved' },
-      ],
     },
     {
       title: 'Users',
       icon: Users,
       path: '/dashboard/users',
       roles: [ROLES.ADMIN],
-      subItems: [
-        { title: 'All Users', path: '/dashboard/users' },
-        { title: 'Add User', path: '/dashboard/users/new' },
-        { title: 'Roles', path: '/dashboard/users/roles' },
-      ],
     },
     {
       title: 'Settings',
