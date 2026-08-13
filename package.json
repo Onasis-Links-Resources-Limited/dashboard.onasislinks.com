@@ -16,6 +16,11 @@
     "@radix-ui/react-select": "^2.3.7",
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.19.0",
+<<<<<<< HEAD
+=======
+    "clsx": "^2.1.1",
+    "docx": "^9.7.1",
+>>>>>>> da92e78679d4327fa6d44d5cda9931c9ea0c0b70
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.31.0",
@@ -24,6 +29,7 @@
     "react-hook-form": "^7.85.0",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.18.2",
+    "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
     "zod": "^3.25.76",
     "zustand": "^5.0.14"
