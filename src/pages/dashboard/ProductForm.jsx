@@ -49,6 +49,7 @@ const ProductForm = () => {
             safeMinOrder = Number(found.minOrder);
           }
           
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setFormData({
             ...found,
             stock: safeStock,     
