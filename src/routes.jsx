@@ -15,6 +15,10 @@ import NotFound from './pages/errors/NotFound';
 import Unauthorized from './pages/errors/Unauthorized';
 // import AuthLayout from './components/layout/AuthLayout';
 import QuoteDetail from "./pages/dashboard/QuoteDetail";
+import CompanySettings from "./pages/dashboard/settings/CompanySettings";
+import RolesSettings from "./pages/dashboard/settings/RolesSettings";
+import NotificationSettings from "./pages/dashboard/settings/NotificationSettings";
+import AppearanceSettings from "./pages/dashboard/settings/AppearanceSettings";
 
 const AppRoutes = () => {
   return (
@@ -39,9 +43,14 @@ const AppRoutes = () => {
         <Route path="/dashboard/quotes/:id" element={<QuoteDetail />} />
           <Route path="/dashboard/users" element={<Users />} />
           <Route path="/dashboard/analytics" element={<Analytics />} />
-          <Route path="/dashboard/settings" element={<Settings />} />
+          <Route path="/dashboard/settings" element={<Settings />}>
+          <Route index element={<Navigate to="/dashboard/settings/company" replace />} />
+          <Route path="company" element={<CompanySettings />} />
+          <Route path="roles" element={<RolesSettings />} />
+          <Route path="notifications" element={<NotificationSettings />} />
+          <Route path="appearance" element={<AppearanceSettings />} />
         </Route>
-      {/* </Route> */}
+      </Route> 
 
       {/* Redirects */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
