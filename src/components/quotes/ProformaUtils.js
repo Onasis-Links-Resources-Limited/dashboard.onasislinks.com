@@ -3,7 +3,7 @@ import onasisLogoUrl from "../../assets/Onasis logo.png";
 // --- Company constants (Onasis Links Resources Limited) --------------------
 
 export const COMPANY = {
-  name: "ONASIS LINKS RESOURCES LIMITED",
+  name: "Onasis Links Resources Limited",
   address: "Plot 78A Eleganza Gardens, Lekki-Epe Expressway",
   tel: "+2348030495649",
   email: "info@onasisltd.com",
@@ -251,29 +251,25 @@ export const downloadProformaPDF = async (quote) => {
   const marginX = 15;
   const rightX = pageWidth - marginX;
 
-  // --- Letterhead ---
+  // --- Letterhead (logo left, company details right) ---
   doc.addImage(logoDataUrl, "PNG", marginX, 12, 30, 13.7);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
-  doc.text(COMPANY.name, marginX + 34, 18);
+  doc.text(COMPANY.name, rightX, 16, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(90);
-  doc.text(COMPANY.address, marginX + 34, 23);
-  doc.text(`Tel: ${COMPANY.tel}   Email: ${COMPANY.email}`, marginX + 34, 27.5);
+  doc.text(COMPANY.address, rightX, 21, { align: "right" });
+  doc.text(`Tel: ${COMPANY.tel}   Email: ${COMPANY.email}`, rightX, 25.5, {
+    align: "right",
+  });
   doc.setTextColor(0);
 
-  doc.setDrawColor(195, 17, 12);
-  doc.setLineWidth(0.6);
+  doc.setDrawColor(230, 80, 27); // Onasis orange (#E6501B), matches the logo  doc.setLineWidth(0.6);
   doc.line(marginX, 32, rightX, 32);
 
-  // --- Title ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
-  doc.text("PROFORMA INVOICE", pageWidth / 2, 41, { align: "center" });
-
   // --- Bill To (left) / Meta (right) ---
-  let y = 49;
+  let y = 40;
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.text("BILL TO", marginX, y);
@@ -305,9 +301,15 @@ export const downloadProformaPDF = async (quote) => {
     doc.text(String(value), rightX, rowY, { align: "right" });
   });
 
+  // --- Title (sits just above the items table, not the letterhead) ---
+  const titleY =
+    y + Math.max(billLines.length * 4.6, metaRows.length * 4.6) + 10;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text("PROFORMA INVOICE", pageWidth / 2, titleY, { align: "center" });
+
   // --- Items table ---
-  const tableStartY =
-    y + Math.max(billLines.length * 4.6, metaRows.length * 4.6) + 8;
+  const tableStartY = titleY + 6;
   autoTable(doc, {
     startY: tableStartY,
     margin: { left: marginX, right: marginX },
@@ -328,7 +330,11 @@ export const downloadProformaPDF = async (quote) => {
       lineColor: [220, 220, 220],
       lineWidth: 0.2,
     },
-    headStyles: { fillColor: [195, 17, 12], textColor: 255, fontStyle: "bold" },
+    headStyles: {
+      fillColor: [180, 180, 180],// #B4B4B4 RBG color for the Proforma Table color
+      textColor: 255,
+      fontStyle: "bold",
+    },
     columnStyles: {
       0: { cellWidth: 12, halign: "center" },
       1: { cellWidth: "auto" },
@@ -356,8 +362,10 @@ export const downloadProformaPDF = async (quote) => {
   );
   if (quote.summary.discount > 0)
     totalLine("Discount", `-${formatMoney(quote.summary.discount)}`);
+  ty += 1.5; // breathing room before the divider so it doesn't crowd the line above it
   doc.setDrawColor(200);
-  doc.line(totalsX, ty - 2.5, rightX, ty - 2.5);
+  doc.line(totalsX, ty, rightX, ty);
+  ty += 5; // breathing room after the divider so it doesn't crowd TOTAL below it
   totalLine("TOTAL (NGN)", formatMoney(quote.summary.totalAmount), true);
 
   // --- Amount in words ---
@@ -485,7 +493,7 @@ export const downloadProformaDOCX = async (quote) => {
 
   const itemHeaderCell = (text) =>
     new TableCell({
-      shading: { fill: "C3110C" },
+      shading: { fill: "646464" },
       verticalAlign: VerticalAlign.CENTER,
       children: [
         new Paragraph({
@@ -631,19 +639,6 @@ export const downloadProformaDOCX = async (quote) => {
             ],
           }),
           new Paragraph({ text: "", spacing: { after: 200 } }),
-          new Paragraph({
-            heading: HeadingLevel.HEADING_1,
-            alignment: AlignmentType.CENTER,
-            children: [
-              new TextRun({
-                text: "PROFORMA INVOICE",
-                bold: true,
-                size: 30,
-                color: "C3110C",
-              }),
-            ],
-            spacing: { after: 240 },
-          }),
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
@@ -696,7 +691,20 @@ export const downloadProformaDOCX = async (quote) => {
               }),
             ],
           }),
-          new Paragraph({ text: "", spacing: { after: 200 } }),
+          new Paragraph({ text: "", spacing: { after: 240 } }),
+          new Paragraph({
+            heading: HeadingLevel.HEADING_1,
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: "PROFORMA INVOICE",
+                bold: true,
+                size: 30,
+                color: "C3110C",
+              }),
+            ],
+            spacing: { after: 240 },
+          }),
           itemsTable,
           new Paragraph({ text: "", spacing: { after: 200 } }),
           totalsTable,
