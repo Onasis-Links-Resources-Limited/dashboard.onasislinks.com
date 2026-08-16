@@ -1,4 +1,3 @@
-import React from 'react';
 import { FaBox, FaQuoteRight, FaUsers, FaStar } from 'react-icons/fa';
 import StatsCard from './StatsCard';
 
