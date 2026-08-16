@@ -1,130 +1,8 @@
-/* eslint-disable react-hooks/immutability */
-/* eslint-disable react-hooks/set-state-in-effect */
 import { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../api/client';
-import { STORAGE_KEYS } from '../constants/config';
-import { ROLES } from '../constants/roles';
+import api from '../services/api';
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(null);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-    if (storedToken) {
-      setToken(storedToken);
-      fetchUser(storedToken);
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchUser = async (authToken) => {
-    try {
-      const response = await api.get('/auth/me', {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      setUser(response.data);
-    // eslint-disable-next-line no-unused-vars
-    } catch (error) {
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-      setToken(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (email, password) => {
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      const { token: authToken, user: userData } = response.data;
-
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, authToken);
-      setToken(authToken);
-      setUser(userData);
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.message || 'Login failed',
-      };
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-    setToken(null);
-    setUser(null);
-  };
-
-  const hasPermission = (permission) => {
-    if (!user) return false;
-    const permissions = {
-      [ROLES.ADMIN]: {
-        canManageProducts: true,
-        canManageCategories: true,
-        canManageUsers: true,
-        canManageRoles: true,
-        canManageQuotes: true,
-        canViewAnalytics: true,
-        canDeleteAny: true,
-        canEditAny: true,
-      },
-      [ROLES.MANAGER]: {
-        canManageProducts: true,
-        canManageCategories: true,
-        canManageUsers: false,
-        canManageRoles: false,
-        canManageQuotes: true,
-        canViewAnalytics: true,
-        canDeleteAny: false,
-        canEditAny: true,
-      },
-      [ROLES.SALES]: {
-        canManageProducts: false,
-        canManageCategories: false,
-        canManageUsers: false,
-        canManageRoles: false,
-        canManageQuotes: true,
-        canViewAnalytics: false,
-        canDeleteAny: false,
-        canEditAny: false,
-      },
-      [ROLES.USER]: {
-        canManageProducts: false,
-        canManageCategories: false,
-        canManageUsers: false,
-        canManageRoles: false,
-        canManageQuotes: false,
-        canViewAnalytics: false,
-        canDeleteAny: false,
-        canEditAny: false,
-      },
-    };
-
-    return permissions[user.role]?.[permission] || false;
-  };
-
-  const value = {
-    user,
-    loading,
-    token,
-    login,
-    logout,
-    isAuthenticated: !!user,
-    isAdmin: user?.role === ROLES.ADMIN,
-    isManager: user?.role === ROLES.MANAGER || user?.role === ROLES.ADMIN,
-    hasPermission,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -132,3 +10,107 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Load user on mount if token exists
+  useEffect(() => {
+    if (token) {
+      loadUser();
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadUser = async () => {
+    try {
+      const response = await api.auth.getProfile(token);
+      if (response.success) {
+        setUser(response.data);
+      } else {
+        logout();
+      }
+    } catch (error) {
+      console.error('Failed to load user:', error);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = async (email, password) => {
+    try {
+      setError(null);
+      const response = await api.auth.staffLogin(email, password);
+      
+      if (response.success) {
+        const { user, token } = response.data;
+        setUser(user);
+        setToken(token);
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        return { success: true };
+      } else {
+        setError(response.message || 'Login failed');
+        return { success: false, error: response.message };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Network error. Please try again.');
+      return { success: false, error: 'Network error' };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      if (token) {
+        await api.auth.logout(token);
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+  };
+
+const updateGlobalUser = (newData) => {
+  setUser((prev) => {
+    const updated = { ...prev, ...newData };
+    // Persist to localStorage so refresh doesn't lose it
+    localStorage.setItem('user', JSON.stringify(updated)); 
+    return updated;
+  });
+};
+
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
+  const value = {
+    user,
+    token,
+    loading,
+    error,
+    login,
+    logout,
+    updateUser,
+    updateGlobalUser,
+    isAuthenticated: !!user && !!token,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export default AuthContext;
