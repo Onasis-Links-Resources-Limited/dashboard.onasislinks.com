@@ -104,7 +104,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-64 bg-[#1A1A1A] border-[#2A2A2A] shadow-2xl dark:bg-[#1A1A1A] dark:border-[#2A2A2A]
+        w-64 bg-[#1A1A1A] border-[#2A2A2A] shadow-md dark:bg-[#1A1A1A] dark:border-[#2A2A2A]
         border-r border-black- dark:border-[#1A1A1A] border-[#2A2A2A]
         transition-all duration-300 ease-in-out
         flex flex-col

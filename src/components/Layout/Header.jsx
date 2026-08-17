@@ -30,7 +30,7 @@ const Header = ({ toggleSidebar }) => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <header className="h-16 bg-[#1A1A1A] border-[#2A2A2A] border-b border-black- dark:border-[#1A1A1A]   flex items-center justify-between px-4 lg:px-6 flex-shrink-0 shadow-2xl">
+    <header className="h-16 bg-[#1A1A1A] border-[#2A2A2A] border-b border-black- dark:border-[#1A1A1A]   flex items-center justify-between px-4 lg:px-6 flex-shrink-0 shadow-md">
       {/* Left */}
       <div className="flex items-center gap-3">
         <button
