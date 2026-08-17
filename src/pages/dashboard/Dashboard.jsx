@@ -1,7 +1,4 @@
-import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import Sidebar from '../../components/layout/Sidebar';
-import Header from '../../components/layout/Header';
 import StatsGrid from '../../components/dashboard/StatsGrid';
 import TopProducts from '../../components/dashboard/TopProducts';
 import QuoteStatus from './QuoteStatus';
@@ -9,7 +6,6 @@ import RecentQuotes from './RecentQuotes';
 
 const Dashboard = () => {
   const { theme } = useTheme();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   return (
     <div className={`min-h-screen transition-colors duration-300`}>

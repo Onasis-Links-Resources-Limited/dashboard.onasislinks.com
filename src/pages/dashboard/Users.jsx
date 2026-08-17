@@ -490,7 +490,7 @@ const Users = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Users Management

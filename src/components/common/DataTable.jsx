@@ -15,12 +15,12 @@ const DataTable = ({
 
   return (
     <div className={`overflow-hidden rounded-xl border shadow-sm transition-colors duration-300 ${
-      isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
+      isDark ? 'border-[#2A2A2A] bg-[#1A1A1A]' : 'border-gray-200 bg-white'
     }`}>
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px]">
-          <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
+          <thead className={isDark ? 'bg-[#2A2A2A]' : 'bg-gray-50'}>
             <tr>
               {columns.map((column) => (
                 <th
@@ -41,7 +41,7 @@ const DataTable = ({
                 <tr
                   key={row.id || index}
                   className={`transition-colors ${
-                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                    isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-50'
                   }`}
                 >
                   {columns.map((column) => (

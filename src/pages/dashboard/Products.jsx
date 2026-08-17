@@ -4,6 +4,7 @@ import { useTheme } from "../../context/ThemeContext";
 import DataTable from "../../components/common/DataTable";
 import toast from 'react-hot-toast';
 import { SearchIcon, CheckIcon, TrashIcon, PencilIcon, XIcon } from "../../components/common/Icons";
+import { FileText, Printer, Sheet } from "lucide-react";
 
 const Products = () => {
   const navigate = useNavigate();
@@ -297,7 +298,7 @@ const Products = () => {
   }));
 
   return (
-    <div className={`relative z-10 min-h-screen p-6 transition-colors duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`relative z-10 min-h-screen p-6 transition-colors duration-300 `}>
       {modalData.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className={`w-full max-w-md rounded-xl border p-6 shadow-2xl transition-colors ${isDark ? 'border-gray-700 bg-gray-800 text-white' : 'border-gray-200 bg-white text-gray-900'}`}>
@@ -323,16 +324,16 @@ const Products = () => {
         <button onClick={() => navigate("/dashboard/products/add")} className="cursor-pointer rounded-lg bg-[#C3110C] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#740A03]">+ Add Product</button>
       </div>
 
-      <div className={`mb-6 rounded-xl border p-4 shadow-sm transition-colors duration-300 ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+      <div className={`mb-6 rounded-xl border p-4 shadow-sm transition-colors duration-300 ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
               <SearchIcon className="w-5 h-5" />
             </span>
-            <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="Search products..." className={`w-full rounded-lg border py-2 pl-10 pr-4 text-sm outline-none transition focus:border-[#C3110C] ${isDark ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400' : 'border-gray-300 bg-white text-gray-900'}`} />
+            <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="Search products..." className={`w-full rounded-lg border py-2 pl-10 pr-4 text-sm outline-none transition focus:border-[#C3110C] ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A] text-white" : "bg-white border-gray-200"}`} />
           </div>
           
-          <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }} className={`rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-600'}`}>
+          <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }} className={`rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A] text-white" : "bg-white border-gray-200"}`}>
             <option>All Categories</option>
             {categoriesList.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
           </select>
@@ -342,19 +343,19 @@ const Products = () => {
             <div className="relative" ref={filterDropdownRef}>
               <button 
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg border cursor-pointer transition ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg border cursor-pointer transition ${isDark ? 'border-[#2A2A2A] text-gray-300 hover:bg-[#212121]' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
               >
                 Filter {dateFilter ? '(Active)' : '▼'}
               </button>
               {isFilterOpen && (
-                <div className={`absolute top-12 left-0 z-50 w-48 rounded-lg border shadow-xl transition-colors ${isDark ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+                <div className={`absolute top-12 left-0 z-50 w-48 rounded-lg border shadow-xl transition-colors ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A]' : 'border-[#2A2A2A] bg-white'}`}>
                   <div className="p-2 flex flex-col gap-1">
-                    <button onClick={() => { setDateFilter(""); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>Clear Filters</button>
+                    <button onClick={() => { setDateFilter(""); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-[#212121] text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>Clear Filters</button>
                     <div className={`h-px my-1 ${isDark ? 'bg-gray-600' : 'bg-gray-200'}`}></div>
-                    <button onClick={() => { setDateFilter("today"); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>Today</button>
-                    <button onClick={() => { setDateFilter("week"); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>This Week</button>
-                    <button onClick={() => { setDateFilter("month"); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>This Month</button>
-                    <button onClick={() => { setDateFilter("year"); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>This Year</button>
+                    <button onClick={() => { setDateFilter("today"); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-[#212121] text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>Today</button>
+                    <button onClick={() => { setDateFilter("week"); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-[#212121] text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>This Week</button>
+                    <button onClick={() => { setDateFilter("month"); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-[#212121] text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>This Month</button>
+                    <button onClick={() => { setDateFilter("year"); setIsFilterOpen(false); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-[#212121] text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>This Year</button>
                   </div>
                 </div>
               )}
@@ -364,16 +365,16 @@ const Products = () => {
             <div className="relative" ref={exportDropdownRef}>
               <button 
                 onClick={() => setIsExportOpen(!isExportOpen)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg border cursor-pointer transition ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg border cursor-pointer transition ${isDark ? 'border-[#2A2A2A] text-gray-300 hover:bg-[#212121]' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
               >
                 Export ▼
               </button>
               {isExportOpen && (
-                <div className={`absolute top-12 right-0 z-50 w-40 rounded-lg border shadow-xl transition-colors ${isDark ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+                <div className={`absolute top-12 right-0 z-50 w-40 rounded-lg border shadow-xl transition-colors ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A]' : 'border-gray-200 bg-white'}`}>
                   <div className="p-2 flex flex-col gap-1">
-                    <button onClick={exportToExcel} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>📊 Export Excel</button>
-                    <button onClick={exportToPDF} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>📄 Export PDF</button>
-                    <button onClick={handlePrint} className={`w-full text-left px-3 py-2 text-sm rounded transition ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>🖨️ Print Preview</button>
+                    <button onClick={exportToExcel} className={`w-full text-left px-3 py-2 text-sm rounded transition flex items-center gap-1.5 ${isDark ? 'hover:bg-[#212121] text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}><Sheet size={18}/> Export Excel</button>
+                    <button onClick={exportToPDF} className={`w-full text-left px-3 py-2 text-sm rounded transition flex items-center gap-1.5 ${isDark ? 'hover:bg-[#212121] text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}><FileText size={18}/> Export PDF</button>
+                    <button onClick={handlePrint} className={`w-full text-left px-3 py-2 text-sm rounded transition flex items-center gap-1.5 ${isDark ? 'hover:bg-[#212121] text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}><Printer size={18}/> Print Preview</button>
                   </div>
                 </div>
               )}
@@ -385,7 +386,7 @@ const Products = () => {
       <div className="mb-6 flex flex-wrap gap-3">
         <button 
           onClick={() => { setCategory("All Categories"); setCurrentPage(1); }} 
-          className={`rounded-lg border px-4 py-2 text-sm shadow-sm transition cursor-pointer ${category === "All Categories" ? "border-[#C3110C] ring-1 ring-[#C3110C]" : isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}
+          className={`rounded-lg border px-4 py-2 text-sm shadow-sm transition cursor-pointer ${category === "All Categories" ? "border-[#C3110C] ring-1 ring-[#C3110C]" : isDark ? 'border-[#2A2A2A] bg-[#1A1A1A]' : 'border-gray-200 bg-white'}`}
         >
           <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>All Products</span> 
           <span className={`font-bold ml-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{products.length}</span>
@@ -395,7 +396,7 @@ const Products = () => {
           <button 
             key={name} 
             onClick={() => { setCategory(name); setCurrentPage(1); }} 
-            className={`rounded-lg border px-4 py-2 text-sm shadow-sm transition cursor-pointer ${category === name ? "border-[#C3110C] ring-1 ring-[#C3110C]" : isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}
+            className={`rounded-lg border px-4 py-2 text-sm shadow-sm transition cursor-pointer ${category === name ? "border-[#C3110C] ring-1 ring-[#C3110C]" : isDark ? 'border-[#2A2A2A] bg-[#1A1A1A]' : 'border-gray-200 bg-white'}`}
           >
             <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{name}</span>
             <span className={`font-bold ml-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{count}</span>
