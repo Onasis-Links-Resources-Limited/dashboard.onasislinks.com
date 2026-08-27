@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, FileText } from "lucide-react";
+import { X, FileText, Plus } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
-import { formatMoney } from "./proformaUtils";
+import { formatMoney } from "./ProformaUtils";
 
 const defaultValidUntil = () => {
   const d = new Date();
@@ -10,14 +10,15 @@ const defaultValidUntil = () => {
   return d.toISOString().slice(0, 10);
 };
 
+// Hardcoded standard terms staff can pick from
+const TERMS_OPTIONS = [
+  "100% payment before delivery",
+  "Full payment 15 days after delivery",
+  "Ex work",
+];
+
 const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-/**
- * Lets staff assign unit prices to a client's requested items (which arrive
- * unpriced from the website) and generates + sends the Proforma Invoice.
- * Live-calculates subtotal/VAT/total from numeric state only — never from
- * formatted strings — to avoid floating point display errors.
- */
 const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   const { theme } = useTheme();
   const [prices, setPrices] = useState(() =>
@@ -29,6 +30,35 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   const [validUntil, setValidUntil] = useState(
     quote?.proforma?.validUntil || defaultValidUntil(),
   );
+
+  // Support multiple terms - store as array
+  const [selectedTerms, setSelectedTerms] = useState(() => {
+    if (!quote?.notes) return [];
+    const notes = quote.notes;
+    const possibleTerms = notes.split(/[,;]\s*|\n/).filter((t) => t.trim());
+    const recognized = possibleTerms.filter((t) =>
+      TERMS_OPTIONS.includes(t.trim()),
+    );
+    // Filter out any default deposit note
+    const filtered = recognized.filter(
+      (t) => t !== "50% deposit required before order processing.",
+    );
+    return filtered.map((t) => t.trim());
+  });
+  const [customNotes, setCustomNotes] = useState(() => {
+    if (!quote?.notes) return "";
+    const notes = quote.notes;
+    const possibleTerms = notes.split(/[,;]\s*|\n/).filter((t) => t.trim());
+    const customParts = possibleTerms.filter(
+      (t) => !TERMS_OPTIONS.includes(t.trim()),
+    );
+    // Filter out any default deposit note from custom notes too
+    const filtered = customParts.filter(
+      (t) => t.trim() !== "50% deposit required before order processing.",
+    );
+    return filtered.join(", ");
+  });
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const items = useMemo(() => quote?.items || [], [quote]);
@@ -52,9 +82,32 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
 
   const allPriced = items.every((item) => Number(prices[item.id]) > 0);
 
+  const buildNotes = () => {
+    const parts = [];
+    if (selectedTerms.length > 0) {
+      parts.push(...selectedTerms);
+    }
+    if (customNotes.trim()) {
+      parts.push(customNotes.trim());
+    }
+    return parts.join("\n");
+  };
+
+  const handleTermToggle = (term) => {
+    setSelectedTerms((prev) => {
+      if (prev.includes(term)) {
+        return prev.filter((t) => t !== term);
+      } else {
+        return [...prev, term];
+      }
+    });
+  };
+
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      // Only send notes that were explicitly selected or entered
+      const notes = buildNotes();
       await onGenerate({
         items: items.map((item) => ({
           id: item.id,
@@ -62,6 +115,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         })),
         discount: Number(discount) || 0,
         validUntil,
+        notes: notes, // This will be empty if nothing is selected
       });
     } finally {
       setSubmitting(false);
@@ -187,6 +241,52 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                 className="w-full border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+              Terms &amp; Notes
+            </label>
+
+            {/* Terms checkboxes */}
+            <div className="space-y-1.5 mb-2">
+              {TERMS_OPTIONS.map((term) => (
+                <label
+                  key={term}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTerms.includes(term)}
+                    onChange={() => handleTermToggle(term)}
+                    className="w-4 h-4 rounded border-gray-300 text-[#C3110C] focus:ring-[#C3110C]"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {term}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {/* Custom notes toggle */}
+            <button
+              type="button"
+              onClick={() => setShowCustomInput(!showCustomInput)}
+              className="text-xs text-[#C3110C] dark:text-[#E6501B] hover:underline flex items-center gap-1 mb-2"
+            >
+              <Plus className="w-3 h-3" />
+              {showCustomInput ? "Hide custom notes" : "Add custom notes"}
+            </button>
+
+            {showCustomInput && (
+              <textarea
+                value={customNotes}
+                onChange={(e) => setCustomNotes(e.target.value)}
+                placeholder="Enter custom terms and notes that apply to this proforma invoice…"
+                rows={3}
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm px-2.5 py-2 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none resize-y"
+              />
+            )}
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-4 space-y-1.5 text-sm">
