@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   X,
   Save,
@@ -9,7 +9,14 @@ import {
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
-const CategoryFormModal = ({
+const CategoryFormModal = (props) => (
+  <CategoryFormModalContent
+    key={`${props.category?.id ?? "new"}-${props.isOpen}`}
+    {...props}
+  />
+);
+
+const CategoryFormModalContent = ({
   isOpen,
   onClose,
   category,
@@ -19,26 +26,15 @@ const CategoryFormModal = ({
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [isActive, setIsActive] = useState(true);
+  const [name, setName] = useState(() => category?.name || "");
+  const [description, setDescription] = useState(
+    () => category?.description || ""
+  );
+  const [isActive, setIsActive] = useState(() => category?.is_active ?? true);
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-
-  useEffect(() => {
-    if (category) {
-      setName(category.name);
-      setDescription(category.description || "");
-      setIsActive(category.is_active);
-      setImagePreview(category.image_url || null);
-    } else {
-      setName("");
-      setDescription("");
-      setIsActive(true);
-      setImageFile(null);
-      setImagePreview(null);
-    }
-  }, [category, isOpen]);
+  const [imagePreview, setImagePreview] = useState(
+    () => category?.image_url || null
+  );
 
   if (!isOpen) return null;
 

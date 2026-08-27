@@ -14,8 +14,6 @@ import {
   FileText, 
   AlertTriangle,
   User as UserIcon,
-  ShieldCheck,
-  Building2
 } from "lucide-react";
 
 // --- Action Badge Configuration ---

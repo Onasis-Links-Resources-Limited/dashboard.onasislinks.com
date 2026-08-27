@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 
 const ProductsContext = createContext();
 
+// This context hook intentionally shares the provider module's context API.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useProductsContext = () => useContext(ProductsContext);
 
 export const ProductsProvider = ({ children }) => {
@@ -36,7 +38,7 @@ export const ProductsProvider = ({ children }) => {
         setProducts(response.data);
         setHasLoaded(true);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to load products.");
     } finally {
       setLoading(false);
@@ -45,12 +47,22 @@ export const ProductsProvider = ({ children }) => {
 
   // Initial load
   useEffect(() => {
-    fetchProducts();
+    const timeoutId = setTimeout(() => {
+      fetchProducts();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Only fetch when search/filter/page changes if data is already loaded
   useEffect(() => {
-    if (hasLoaded) fetchProducts();
+    if (!hasLoaded) return;
+
+    const timeoutId = setTimeout(() => {
+      fetchProducts();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [search, category, status, date, currentPage]);
 
   const createProduct = async (formData) => {
@@ -64,7 +76,7 @@ export const ProductsProvider = ({ children }) => {
         toast.error(response.message || "Failed to create product.");
         return false;
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error.");
       return false;
     }
@@ -81,7 +93,7 @@ export const ProductsProvider = ({ children }) => {
         toast.error(response.message || "Failed to update product.");
         return false;
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error.");
       return false;
     }
@@ -98,7 +110,7 @@ export const ProductsProvider = ({ children }) => {
         toast.error(response.message || "Failed to delete product.");
         return false;
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error.");
       return false;
     }

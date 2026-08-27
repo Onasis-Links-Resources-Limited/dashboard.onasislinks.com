@@ -28,7 +28,7 @@ export const useProducts = () => {
       if (response.success) {
         setProducts(response.data);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to load products.");
     } finally {
       setLoading(false);
@@ -36,7 +36,11 @@ export const useProducts = () => {
   }, [token, search, category, status, date, currentPage]);
 
   useEffect(() => {
-    fetchProducts();
+    const loadProducts = async () => {
+      await fetchProducts();
+    };
+
+    loadProducts();
   }, [fetchProducts]);
 
   const createProduct = async (formData) => {
@@ -50,7 +54,7 @@ export const useProducts = () => {
         toast.error(response.message || "Failed to create product.");
         return false;
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error.");
       return false;
     }
@@ -67,7 +71,7 @@ export const useProducts = () => {
         toast.error(response.message || "Failed to update product.");
         return false;
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error.");
       return false;
     }
@@ -84,7 +88,7 @@ export const useProducts = () => {
         toast.error(response.message || "Failed to delete product.");
         return false;
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error.");
       return false;
     }

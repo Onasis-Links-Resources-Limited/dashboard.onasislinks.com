@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { AVATARS } from '../data/avatar';
-import { Eye, EyeOff, ChevronDown, ChevronUp, Check, Upload, Camera, User as UserIcon } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown, ChevronUp, Check, Upload, Camera } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -24,21 +24,25 @@ const ProfileModal = ({ isOpen, onClose }) => {
   const [passMessage, setPassMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (!isOpen || !user) return;
+
+    const syncProfileState = setTimeout(() => {
       let avatarId = user.avatar_url || localStorage.getItem(`avatar_${user.id}`);
       if (avatarId && !AVATARS.find(a => a.id === avatarId)) avatarId = null;
-      
+
       setSelectedAvatar(avatarId || null);
-      setFormData({ 
-        first_name: user.first_name || '', 
+      setFormData({
+        first_name: user.first_name || '',
         last_name: user.last_name || '',
         phone: user.phone || ''
       });
       setShowPasswordChange(false);
       setPassMessage({ type: '', text: '' });
       setPassData({ current_password: '', new_password: '' });
-    }
-  }, [isOpen, user]);
+    }, 0);
+
+    return () => clearTimeout(syncProfileState);
+  }, [isOpen, user, user?.id]);
 
   const handleAvatarSelect = async (avatarId) => {
     if (isUpdatingAvatar) return;
@@ -78,7 +82,7 @@ const ProfileModal = ({ isOpen, onClose }) => {
       } else {
         setPassMessage({ type: 'error', text: data.errors ? data.errors[0] : data.message });
       }
-    } catch (error) {
+    } catch {
       setPassMessage({ type: 'error', text: 'Network error.' });
     } finally {
       setIsChangingPass(false);

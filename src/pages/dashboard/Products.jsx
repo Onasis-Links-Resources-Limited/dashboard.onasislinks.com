@@ -31,8 +31,6 @@ const Products = () => {
   const [reason, setReason] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const filterDropdownRef = useRef(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const exportDropdownRef = useRef(null);
 
@@ -77,12 +75,11 @@ const Products = () => {
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) setIsFilterOpen(false);
       if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target)) setIsExportOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [filterDropdownRef, exportDropdownRef]);
+  }, [exportDropdownRef]);
 
   const handleDelete = async () => {
     if (!reason.trim()) {

@@ -75,7 +75,7 @@ const ProductForm = () => {
               setDatasheets(response.data.datasheets);
             }
           }
-        } catch (error) {
+        } catch {
           toast.error("Failed to load product");
         } finally {
           setLoading(false);
@@ -151,7 +151,7 @@ const ProductForm = () => {
     }
     
     // ✅ Send New Datasheet Files
-    newDatasheetFiles.forEach((file, index) => {
+    newDatasheetFiles.forEach((file) => {
       formDataObj.append(`datasheet_files`, file);
     });
 
@@ -168,7 +168,7 @@ const ProductForm = () => {
       if (success) {
         navigate("/dashboard/products");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to save product");
     } finally {
       setIsSubmitting(false);

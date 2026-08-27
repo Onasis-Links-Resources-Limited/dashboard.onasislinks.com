@@ -11,6 +11,7 @@ import QuoteTable from "../../components/quotes/QuoteTable";
 import Pagination from "../../components/common/Pagination";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import AddQuoteDialog from "../../components/quotes/AddQuoteDialog";
+import { useTheme } from "../../context/ThemeContext";
 
 const downloadCSV = (csvText, filename) => {
   const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
@@ -33,6 +34,8 @@ const hasActiveFilters = (filters) =>
 const Quotes = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   const [quotes, setQuotes] = useState([]);
   const [meta, setMeta] = useState({
@@ -173,14 +176,14 @@ const Quotes = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
             Quotes Management
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+          <p className={`mt-1 text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
             Track, review and act on customer quote requests.
           </p>
         </div>
@@ -196,7 +199,7 @@ const Quotes = () => {
       </div>
 
       {/* Card containing filters + table + pagination */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+      <div className={` ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"} rounded-xl overflow-hidden`}>
         <QuoteFilters filters={filters} onChange={handleFiltersChange} />
 
         <QuoteTable

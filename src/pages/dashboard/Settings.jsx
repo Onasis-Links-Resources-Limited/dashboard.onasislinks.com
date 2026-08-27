@@ -1,6 +1,5 @@
 import { Outlet, NavLink } from "react-router-dom";
 import { Building2, ShieldCheck, Bell, Sun } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext"; // ✅ Import
 // import { ROLES } from "../../constants/roles";
 import { cn } from "../../libs/utils";
@@ -34,7 +33,6 @@ const TABS = [
  * is the actual gate: anyone else hitting the URL directly is redirected.
  */
 const Settings = () => {
-  const { user } = useAuth();
   const { theme } = useTheme(); // ✅ Get theme
   const isDark = theme === "dark"; // ✅ Check if dark mode
   // const allowed = user?.role === ROLES.ADMIN || user?.role === ROLES.MANAGER;

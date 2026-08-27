@@ -4,6 +4,9 @@ import toast from "react-hot-toast";
 
 const DashboardContext = createContext();
 
+// This hook intentionally shares the context with DashboardProvider. Keep the
+// export here until the hook is moved to a dedicated module.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useDashboard = () => {
   const context = useContext(DashboardContext);
   if (!context) {
@@ -20,11 +23,6 @@ export const DashboardProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
 
-  // ----- HAS LOADED (CACHING) -----
-  const [hasLoadedProducts, setHasLoadedProducts] = useState(false);
-  const [hasLoadedCategories, setHasLoadedCategories] = useState(false);
-  const [hasLoadedDashboard, setHasLoadedDashboard] = useState(false);
-
   // ----- LOADING STATES -----
   const [productsLoading, setProductsLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -39,30 +37,28 @@ export const DashboardProvider = ({ children }) => {
   const itemsPerPage = 5;
 
   // ----- FETCHERS (No search/date/currentPage dependencies!) -----
-  const fetchDashboard = useCallback(async (force = false) => {
+  const fetchDashboard = useCallback(async () => {
     setDashboardLoading(true);
     try {
       const response = await api.dashboard.getStats(token);
       if (response.success) {
         setDashboardStats(response.data);
-        setHasLoadedDashboard(true);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to load dashboard.");
     } finally {
       setDashboardLoading(false);
     }
   }, [token]);
 
-  const fetchCategories = useCallback(async (force = false) => {
+  const fetchCategories = useCallback(async () => {
     setCategoriesLoading(true);
     try {
       const response = await api.categories.getAll(token);
       if (response.success) {
         setCategories(response.data);
-        setHasLoadedCategories(true);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to load categories.");
     } finally {
       setCategoriesLoading(false);
@@ -70,7 +66,7 @@ export const DashboardProvider = ({ children }) => {
   }, [token]);
 
   // ✅ Fetch ALL products. Filtering happens on frontend.
-  const fetchProducts = useCallback(async (force = false) => {
+  const fetchProducts = useCallback(async () => {
     setProductsLoading(true);
     try {
       const response = await api.products.getAll(token, {
@@ -79,9 +75,8 @@ export const DashboardProvider = ({ children }) => {
       });
       if (response.success) {
         setProducts(response.data);
-        setHasLoadedProducts(true);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to load products.");
     } finally {
       setProductsLoading(false);
@@ -90,9 +85,15 @@ export const DashboardProvider = ({ children }) => {
 
   // ----- INITIAL LOAD (Runs once) -----
   useEffect(() => {
-    fetchDashboard(true);
-    fetchCategories(true);
-    fetchProducts(true);
+    // Defer the initial fetches so their loading-state updates do not occur
+    // synchronously while React is running this effect.
+    const timeoutId = setTimeout(() => {
+      fetchDashboard(true);
+      fetchCategories(true);
+      fetchProducts(true);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 

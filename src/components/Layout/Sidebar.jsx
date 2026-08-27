@@ -17,7 +17,6 @@ import {
   ChevronUp,
   ClipboardClock,
 } from "lucide-react";
-import path from "node:path";
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { logout } = useAuth();
