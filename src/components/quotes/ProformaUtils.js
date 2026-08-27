@@ -48,6 +48,7 @@ const ONES = [
   "Eighteen",
   "Nineteen",
 ];
+
 const TENS = [
   "",
   "",
@@ -60,48 +61,69 @@ const TENS = [
   "Eighty",
   "Ninety",
 ];
+
 const GROUPS = ["", "Thousand", "Million", "Billion", "Trillion"];
 
 const threeDigitsToWords = (n) => {
   let str = "";
+
   if (n >= 100) {
     str += `${ONES[Math.floor(n / 100)]} Hundred`;
     n %= 100;
+
     if (n > 0) str += " ";
   }
+
   if (n >= 20) {
     str += TENS[Math.floor(n / 10)];
-    if (n % 10 > 0) str += `-${ONES[n % 10]}`;
+
+    if (n % 10 > 0) {
+      str += `-${ONES[n % 10]}`;
+    }
   } else if (n > 0) {
     str += ONES[n];
   }
+
   return str;
 };
 
 const integerToWords = (num) => {
   if (num === 0) return "Zero";
+
   const parts = [];
   let i = 0;
   let n = num;
+
   while (n > 0) {
     const chunk = n % 1000;
+
     if (chunk > 0) {
       parts.unshift(
         threeDigitsToWords(chunk) + (GROUPS[i] ? ` ${GROUPS[i]}` : ""),
       );
     }
+
     n = Math.floor(n / 1000);
     i++;
   }
+
   return parts.join(", ");
 };
 
-/** e.g. amountToWords(15080100) -> "Fifteen Million, Eighty Thousand, One Hundred Naira Only" */
+/**
+ * e.g. amountToWords(15080100)
+ * -> "Fifteen Million, Eighty Thousand, One Hundred Naira Only"
+ */
 export const amountToWords = (amount) => {
   const naira = Math.floor(amount);
   const kobo = Math.round((amount - naira) * 100);
+
   let words = `${integerToWords(naira)} Naira`;
-  if (kobo > 0) words += `, ${integerToWords(kobo)} Kobo`;
+
+  if (kobo > 0) {
+    words += `, ${integerToWords(kobo)} Kobo`;
+  }
+
   return `${words} Only`;
 };
 
@@ -127,12 +149,15 @@ const getLogoDataUrl = () => {
       (blob) =>
         new Promise((resolve, reject) => {
           const reader = new FileReader();
+
           reader.onload = () => resolve(reader.result);
           reader.onerror = reject;
+
           reader.readAsDataURL(blob);
         }),
     );
   }
+
   return logoDataUrlPromise;
 };
 
@@ -140,32 +165,38 @@ const getLogoArrayBuffer = () => {
   if (!logoArrayBufferPromise) {
     logoArrayBufferPromise = fetchLogoBlob().then((blob) => blob.arrayBuffer());
   }
+
   return logoArrayBufferPromise;
 };
 
-// --- Shared download helper --------------------------------------------------
+// --- Shared download helper -------------------------------------------------
 
 export const downloadBlob = (blob, filename) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
+
   link.href = url;
   link.setAttribute("download", filename);
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+
   URL.revokeObjectURL(url);
 };
 
 const proformaFilename = (quote, ext) =>
   `Proforma-${quote.proforma?.number || quote.id}.${ext}`;
 
-// --- CSV ---------------------------------------------------------------------
+// --- CSV --------------------------------------------------------------------
 
 export const buildProformaCSV = (quote) => {
   const escapeCell = (cell) => {
     const value = String(cell);
+
     return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
   };
+
   const row = (cells) => cells.map(escapeCell).join(",");
 
   const lines = [
@@ -179,10 +210,12 @@ export const buildProformaCSV = (quote) => {
     row(["VAT No.:", COMPANY.vatNo]),
     row(["Tax ID:", COMPANY.taxId]),
     row([]),
+
     row(["Bill To", quote.customer.company || quote.customer.name]),
     row(["Address", quote.customer.address || ""]),
     row(["Email", quote.customer.email]),
     row([]),
+
     row([
       "S/No",
       "Item Description",
@@ -191,6 +224,7 @@ export const buildProformaCSV = (quote) => {
       "Unit Price",
       "Total Price",
     ]),
+
     ...quote.items.map((item, i) =>
       row([
         i + 1,
@@ -230,7 +264,15 @@ export const buildProformaCSV = (quote) => {
     // Overall Total outside the table
     row(["TOTAL (NGN)", formatMoney(quote.summary.totalAmount)]),
     row([]),
+
+    // Overall Total
+    row(["TOTAL (NGN)", formatMoney(quote.summary.totalAmount)]),
+
+    row([]),
+
+    // Amount in Words
     row(["Amount in Words", amountToWords(quote.summary.totalAmount)]),
+
     row([]),
     // Bank details - labels and values on separate columns
     row(["Banker:", COMPANY.bank.bankerName]),
@@ -254,11 +296,15 @@ export const buildProformaCSV = (quote) => {
 
 export const downloadProformaCSV = (quote) => {
   const csv = buildProformaCSV(quote);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+
+  const blob = new Blob([csv], {
+    type: "text/csv;charset=utf-8;",
+  });
+
   downloadBlob(blob, proformaFilename(quote, "csv"));
 };
 
-// --- PDF (jsPDF + autotable) --------------------------------------------------
+// --- PDF (jsPDF + autotable) ------------------------------------------------
 
 export const downloadProformaPDF = async (quote) => {
   const [{ jsPDF }, autoTableModule, logoDataUrl] = await Promise.all([
@@ -266,9 +312,14 @@ export const downloadProformaPDF = async (quote) => {
     import("jspdf-autotable"),
     getLogoDataUrl(),
   ]);
+
   const autoTable = autoTableModule.default;
 
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({
+    unit: "mm",
+    format: "a4",
+  });
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const marginX = 15;
   const rightX = pageWidth - marginX;
@@ -291,23 +342,33 @@ export const downloadProformaPDF = async (quote) => {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(90);
-  doc.text(COMPANY.address, rightX, 21, { align: "right" });
+
+  doc.text(COMPANY.address, rightX, 21, {
+    align: "right",
+  });
+
   doc.text(`Tel: ${COMPANY.tel}   Email: ${COMPANY.email}`, rightX, 25.5, {
     align: "right",
   });
+
   doc.setTextColor(0);
 
   doc.setDrawColor(230, 80, 27);
   doc.setLineWidth(0.6);
   doc.line(marginX, 32, rightX, 32);
 
-  // --- Bill To (left) / Meta (right) ---
+  // --- Bill To / Meta -------------------------------------------------------
+
   let y = 40;
+
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
+
   doc.text("BILL TO", marginX, y);
+
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
+
   const billLines = [
     quote.customer.company || quote.customer.name,
     quote.customer.address,
@@ -326,6 +387,7 @@ export const downloadProformaPDF = async (quote) => {
     ["VAT No.:", COMPANY.vatNo],
     ["Tax ID:", COMPANY.taxId],
   ];
+
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -414,11 +476,14 @@ export const downloadProformaPDF = async (quote) => {
       lineColor: [220, 220, 220],
       lineWidth: 0.2,
     },
+
     headStyles: {
+      fillColor: [180, 180, 180],
       fillColor: [180, 180, 180],
       textColor: 255,
       fontStyle: "bold",
     },
+
     columnStyles: {
       0: { cellWidth: 12, halign: "center" },
       1: { cellWidth: "auto" },
@@ -466,7 +531,9 @@ export const downloadProformaPDF = async (quote) => {
     `Amount in Words: ${amountToWords(quote.summary.totalAmount)}`,
     rightX - marginX,
   );
+
   doc.text(wordsText, marginX, ty);
+
   ty += wordsText.length * 4.6 + 4;
 
   // --- Bank details (Centered on the page with column alignment) ---
@@ -539,34 +606,47 @@ export const downloadProformaPDF = async (quote) => {
   if (termsNotes.length > 0) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
+
     doc.text("TERMS & NOTES", marginX, ty);
+
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
+
     ty += 5;
     const noteText = termsNotes.join("\n");
     const noteLines = doc.splitTextToSize(noteText, rightX - marginX);
     doc.text(noteLines, marginX, ty);
+
     ty += noteLines.length * 4.6 + 6;
   }
 
-  // --- Signatures ---
+  // --- Signatures -----------------------------------------------------------
+
   const sigY = Math.max(ty + 10, 255);
+
   doc.setFontSize(9.5);
+
   doc.text("_______________________", marginX, sigY);
+
   doc.text("For Onasis Links Resources Limited", marginX, sigY + 5);
+
   doc.text("Date: ______________", marginX, sigY + 10);
 
   doc.text("_______________________", rightX - 60, sigY);
+
   doc.text(
     `For ${quote.customer.company || quote.customer.name}`,
     rightX - 60,
     sigY + 5,
   );
+
   doc.text("Date: ______________", rightX - 60, sigY + 10);
 
-  // --- Footer ---
+  // --- Footer ---------------------------------------------------------------
+
   doc.setFontSize(7.5);
   doc.setTextColor(130);
+
   doc.text(
     `${COMPANY.name}  ·  ${COMPANY.rcNumber}  ·  This is a system-generated proforma invoice.`,
     pageWidth / 2,
@@ -579,10 +659,11 @@ export const downloadProformaPDF = async (quote) => {
   doc.save(proformaFilename(quote, "pdf"));
 };
 
-// --- DOCX ---------------------------------------------------------------------
+// --- DOCX -------------------------------------------------------------------
 
 export const downloadProformaDOCX = async (quote) => {
   const docx = await import("docx");
+
   const {
     Document,
     Packer,
@@ -600,7 +681,12 @@ export const downloadProformaDOCX = async (quote) => {
 
   const logoBuffer = await getLogoArrayBuffer();
 
-  const noBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  const noBorder = {
+    style: BorderStyle.NONE,
+    size: 0,
+    color: "FFFFFF",
+  };
+
   const plainCellBorders = {
     top: noBorder,
     bottom: noBorder,
@@ -628,7 +714,13 @@ export const downloadProformaDOCX = async (quote) => {
           children: [
             new Paragraph({
               alignment: AlignmentType.RIGHT,
-              children: [new TextRun({ text: value, size: 18 })],
+
+              children: [
+                new TextRun({
+                  text: value,
+                  size: 18,
+                }),
+              ],
             }),
           ],
         }),
@@ -664,25 +756,44 @@ export const downloadProformaDOCX = async (quote) => {
 
   const itemHeaderCell = (text) =>
     new TableCell({
-      shading: { fill: "646464" },
+      shading: {
+        fill: "646464",
+      },
+
       verticalAlign: VerticalAlign.CENTER,
+
       children: [
         new Paragraph({
           alignment: AlignmentType.CENTER,
+
           children: [
-            new TextRun({ text, bold: true, color: "FFFFFF", size: 18 }),
+            new TextRun({
+              text,
+              bold: true,
+              color: "FFFFFF",
+              size: 18,
+            }),
           ],
         }),
       ],
     });
 
+  // --- Item cell ------------------------------------------------------------
+
   const itemCell = (text, align = AlignmentType.LEFT) =>
     new TableCell({
       verticalAlign: VerticalAlign.CENTER,
+
       children: [
         new Paragraph({
           alignment: align,
-          children: [new TextRun({ text: String(text), size: 18 })],
+
+          children: [
+            new TextRun({
+              text: String(text),
+              size: 18,
+            }),
+          ],
         }),
       ],
     });
@@ -801,10 +912,21 @@ export const downloadProformaDOCX = async (quote) => {
     rows: [metaRow("TOTAL (NGN)", formatMoney(quote.summary.totalAmount))],
   });
 
+  // --- Paragraph helper ----------------------------------------------------
+
   const paragraph = (text, opts = {}) =>
     new Paragraph({
-      children: [new TextRun({ text, size: 18, ...opts })],
-      spacing: { after: 80 },
+      children: [
+        new TextRun({
+          text,
+          size: 18,
+          ...opts,
+        }),
+      ],
+
+      spacing: {
+        after: 80,
+      },
     });
 
   // Build terms with Valid Until
@@ -823,15 +945,26 @@ export const downloadProformaDOCX = async (quote) => {
     sections: [
       {
         properties: {},
+
         children: [
+          // Letterhead
           new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+
             rows: [
               new TableRow({
                 children: [
                   new TableCell({
                     borders: plainCellBorders,
-                    width: { size: 30, type: WidthType.PERCENTAGE },
+
+                    width: {
+                      size: 30,
+                      type: WidthType.PERCENTAGE,
+                    },
+
                     children: [
                       new Paragraph({
                         children: [
@@ -847,13 +980,21 @@ export const downloadProformaDOCX = async (quote) => {
                       }),
                     ],
                   }),
+
                   new TableCell({
                     borders: plainCellBorders,
-                    width: { size: 70, type: WidthType.PERCENTAGE },
+
+                    width: {
+                      size: 70,
+                      type: WidthType.PERCENTAGE,
+                    },
+
                     verticalAlign: VerticalAlign.CENTER,
+
                     children: [
                       new Paragraph({
                         alignment: AlignmentType.RIGHT,
+
                         children: [
                           new TextRun({
                             text: COMPANY.name,
@@ -862,8 +1003,10 @@ export const downloadProformaDOCX = async (quote) => {
                           }),
                         ],
                       }),
+
                       new Paragraph({
                         alignment: AlignmentType.RIGHT,
+
                         children: [
                           new TextRun({
                             text: COMPANY.address,
@@ -872,8 +1015,10 @@ export const downloadProformaDOCX = async (quote) => {
                           }),
                         ],
                       }),
+
                       new Paragraph({
                         alignment: AlignmentType.RIGHT,
+
                         children: [
                           new TextRun({
                             text: `Tel: ${COMPANY.tel}   Email: ${COMPANY.email}`,
@@ -888,28 +1033,56 @@ export const downloadProformaDOCX = async (quote) => {
               }),
             ],
           }),
-          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          new Paragraph({
+            text: "",
+
+            spacing: {
+              after: 200,
+            },
+          }),
+
+          // Bill To / Meta
           new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+
             rows: [
               new TableRow({
                 children: [
                   new TableCell({
                     borders: plainCellBorders,
-                    width: { size: 55, type: WidthType.PERCENTAGE },
+
+                    width: {
+                      size: 55,
+                      type: WidthType.PERCENTAGE,
+                    },
+
                     children: [
-                      paragraph("BILL TO", { bold: true }),
+                      paragraph("BILL TO", {
+                        bold: true,
+                      }),
+
                       paragraph(quote.customer.company || quote.customer.name, {
                         bold: true,
                       }),
                       paragraph(quote.customer.address || ""),
+
                       paragraph(quote.customer.email),
                       // Phone number removed
                     ],
                   }),
+
                   new TableCell({
                     borders: plainCellBorders,
-                    width: { size: 45, type: WidthType.PERCENTAGE },
+
+                    width: {
+                      size: 45,
+                      type: WidthType.PERCENTAGE,
+                    },
+
                     children: [
                       // Meta info - labels on left, values on right
                       new Table({
@@ -931,8 +1104,10 @@ export const downloadProformaDOCX = async (quote) => {
           // Title centered with Date on the right
           new Paragraph({
             alignment: AlignmentType.CENTER,
+
             children: [
               new TextRun({
+                text: "Proforma Invoice",
                 text: "Proforma Invoice",
                 bold: true,
                 size: 30,
@@ -952,13 +1127,35 @@ export const downloadProformaDOCX = async (quote) => {
             ],
             spacing: { after: 240 },
           }),
+
+          // Items
           itemsTable,
-          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          new Paragraph({
+            text: "",
+
+            spacing: {
+              after: 200,
+            },
+          }),
+
+          // Total
           totalsTable,
-          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          new Paragraph({
+            text: "",
+
+            spacing: {
+              after: 200,
+            },
+          }),
+
+          // Amount in Words
           paragraph(
             `Amount in Words: ${amountToWords(quote.summary.totalAmount)}`,
-            { italics: true },
+            {
+              italics: true,
+            },
           ),
           new Paragraph({ text: "", spacing: { after: 200 } }),
           // --- BANK DETAILS SECTION (Column aligned like meta info) ---
@@ -987,32 +1184,65 @@ export const downloadProformaDOCX = async (quote) => {
           ...(termsText
             ? [paragraph("TERMS & NOTES", { bold: true }), paragraph(termsText)]
             : []),
-          new Paragraph({ text: "", spacing: { after: 400 } }),
+
+          new Paragraph({
+            text: "",
+
+            spacing: {
+              after: 400,
+            },
+          }),
+
+          // ------------------------------------------------------------------
+          // SIGNATURES
+          // ------------------------------------------------------------------
+
           new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+
             rows: [
               new TableRow({
                 children: [
                   new TableCell({
                     borders: plainCellBorders,
-                    width: { size: 50, type: WidthType.PERCENTAGE },
+
+                    width: {
+                      size: 50,
+                      type: WidthType.PERCENTAGE,
+                    },
+
                     children: [
                       paragraph("_______________________"),
+
                       paragraph("For Onasis Links Resources Limited", {
                         bold: true,
                       }),
+
                       paragraph("Date: ______________"),
                     ],
                   }),
+
                   new TableCell({
                     borders: plainCellBorders,
-                    width: { size: 50, type: WidthType.PERCENTAGE },
+
+                    width: {
+                      size: 50,
+                      type: WidthType.PERCENTAGE,
+                    },
+
                     children: [
                       paragraph("_______________________"),
+
                       paragraph(
                         `For ${quote.customer.company || quote.customer.name}`,
-                        { bold: true },
+                        {
+                          bold: true,
+                        },
                       ),
+
                       paragraph("Date: ______________"),
                     ],
                   }),
@@ -1020,9 +1250,22 @@ export const downloadProformaDOCX = async (quote) => {
               }),
             ],
           }),
-          new Paragraph({ text: "", spacing: { before: 400 } }),
+
+          new Paragraph({
+            text: "",
+
+            spacing: {
+              before: 400,
+            },
+          }),
+
+          // ------------------------------------------------------------------
+          // FOOTER
+          // ------------------------------------------------------------------
+
           new Paragraph({
             alignment: AlignmentType.CENTER,
+
             children: [
               new TextRun({
                 text: `${COMPANY.name} · ${COMPANY.rcNumber} · System-generated proforma invoice`,
@@ -1037,5 +1280,6 @@ export const downloadProformaDOCX = async (quote) => {
   });
 
   const blob = await Packer.toBlob(doc);
+
   downloadBlob(blob, proformaFilename(quote, "docx"));
 };
