@@ -122,7 +122,7 @@ const ProfileModal = ({ isOpen, onClose }) => {
         
         {/* --- HEADER: Centered Avatar & Name --- */}
         <div className={`p-8 pb-4 flex flex-col items-center border-b relative ${isDark ? "border-[#2A2A2A]" : "border-gray-200"}`}>
-          <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#C3110C] shadow-[0_0_20px_rgba(195,17,12,0.2)] mb-3 relative group">
+          <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#E6501B] shadow-[0_0_20px_rgba(195,17,12,0.2)] mb-3 relative group">
             {renderProfileImage()}
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => fileInputRef.current?.click()}>
               <Camera className="w-6 h-6 text-white" />

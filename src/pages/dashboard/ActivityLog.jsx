@@ -151,7 +151,7 @@ const ActivityLog = () => {
   const cardClasses = `rounded-xl border p-5 shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`;
   const titleClasses = `text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`;
   const descClasses = `mt-1 text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`;
-  const inputClasses = `pl-9 pr-4 py-2 rounded-lg border text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-200 bg-white text-gray-900"}`;
+  const inputClasses = `pl-9 pr-4 py-2 rounded-lg border text-sm outline-none focus:border-[#E6501B] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-200 bg-white text-gray-900"}`;
 
   return (
     <div className="space-y-6">
