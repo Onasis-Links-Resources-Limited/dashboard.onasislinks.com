@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, FileText } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
-import { formatMoney } from "./proformaUtils";
+import { formatMoney } from "./ProformaUtils";
 
 const defaultValidUntil = () => {
   const d = new Date();
