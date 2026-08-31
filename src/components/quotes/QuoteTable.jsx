@@ -125,7 +125,7 @@ const QuoteTable = ({
             {quotes.map((quote) => (
               <tr
                 key={quote.id}
-                className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+                className="border-b border-gray-100 dark:border-[#2A2A2A] hover:bg-gray-50 dark:hover:bg-[#212121] transition-colors"
               >
                 <td className="px-4 py-3 w-10">
                   <input
@@ -133,7 +133,7 @@ const QuoteTable = ({
                     checked={selectedIds.includes(quote.id)}
                     onChange={() => onToggleSelect(quote.id)}
                     aria-label={`Select quote ${quote.id}`}
-                    className="rounded border-gray-300 dark:border-gray-600 text-[#C3110C] focus:ring-[#C3110C]"
+                    className="rounded border-gray-300 dark:border-[#2A2A2A] text-[#C3110C] focus:ring-[#C3110C]"
                   />
                 </td>
                 <td className="px-4 py-3">
@@ -141,7 +141,7 @@ const QuoteTable = ({
                     onClick={() => onView(quote)}
                     className="font-mono text-xs font-medium text-[#C3110C] dark:text-[#E6501B] hover:underline"
                   >
-                    {quote.id}
+                    {quote.quoteNumber}
                   </button>
                 </td>
                 <td className="px-4 py-3">
@@ -192,7 +192,7 @@ const QuoteTable = ({
                     onClick={() => onView(quote)}
                     className="font-mono text-xs font-medium text-[#C3110C] dark:text-[#E6501B]"
                   >
-                    {quote.id}
+                    {quote.quoteNumber}
                   </button>
                   <div className="text-sm font-medium text-gray-900 dark:text-white truncate mt-0.5">
                     {quote.customer.name}
@@ -239,7 +239,7 @@ const TableHead = ({ allSelected, onToggleSelectAll, disabled = false }) => (
           className="rounded border-gray-300 dark:border-gray-600 text-[#C3110C] focus:ring-[#C3110C]"
         />
       </th>
-      <th className="px-4 py-3">Quote ID</th>
+      <th className="px-4 py-3">Quote Number</th>
       <th className="px-4 py-3">Customer</th>
       <th className="px-4 py-3">Items</th>
       <th className="px-4 py-3">Amount</th>

@@ -1,7 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export const api = {
-  // Auth endpoints
+  // Auth endpoint
   auth: {
     staffLogin: async (email, password) => {
       const response = await fetch(`${API_BASE}/auth/staff/login`, {
@@ -73,7 +73,7 @@ export const api = {
     },
   },
 
-  // Users endpoints
+  // Users endpoint
   users: {
     getAll: async (token, params = {}) => {
       const queryString = new URLSearchParams(params).toString();
@@ -151,9 +151,17 @@ export const api = {
       });
       return response.json();
     },
+
+    exportCSV: async (token, params = {}) => {
+      const queryString = new URLSearchParams(params).toString();
+      const response = await fetch(`${API_BASE}/users/export?${queryString}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.text(); // For CSV, we just get text back!
+    },
   },
 
-  // Quotes endpoints
+  // Quotes endpoint
   quotes: {
     getAll: async (token, params = {}) => {
       const queryString = new URLSearchParams(params).toString();
@@ -249,6 +257,158 @@ export const api = {
         },
       });
       return response.blob();
+    },
+  },
+
+  // Dashboard endpoint
+  dashboard: {
+    getStats: async (token) => {
+      const response = await fetch(`${API_BASE}/dashboard`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.json();
+    },
+  },
+
+  // Categories endpoint
+  categories: {
+    getAll: async (token) => {
+      const response = await fetch(`${API_BASE}/categories`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.json();
+    },
+
+    create: async (token, formData) => {
+      const response = await fetch(`${API_BASE}/categories`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      return response.json();
+    },
+
+    update: async (token, id, formData) => {
+      const response = await fetch(`${API_BASE}/categories/${id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      return response.json();
+    },
+
+    delete: async (token, id) => {
+      const response = await fetch(`${API_BASE}/categories/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.json();
+    },
+  },
+
+  // Products endpoint
+  products: {
+    getAll: async (token, params = {}) => {
+      const queryString = new URLSearchParams(params).toString();
+      const response = await fetch(`${API_BASE}/products?${queryString}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.json();
+    },
+
+    getOne: async (token, id) => {
+      const response = await fetch(`${API_BASE}/products/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.json();
+    },
+
+    create: async (token, formData) => {
+      const response = await fetch(`${API_BASE}/products`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      return response.json();
+    },
+
+    update: async (token, id, formData) => {
+      const response = await fetch(`${API_BASE}/products/${id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      return response.json();
+    },
+
+    delete: async (token, id) => {
+      const response = await fetch(`${API_BASE}/products/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.json();
+    },
+  },
+
+  // Settings endpoint
+  settings: {
+    getCompany: async (token) => {
+      const response = await fetch(`${API_BASE}/settings/company`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.json();
+    },
+
+    updateCompany: async (token, data) => {
+      const response = await fetch(`${API_BASE}/settings/company`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    },
+
+    getNotifications: async (token) => {
+      const response = await fetch(`${API_BASE}/settings/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.json();
+    },
+
+    updateNotifications: async (token, data) => {
+      const response = await fetch(`${API_BASE}/settings/notifications`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    },
+  },
+
+  // Activity Logs endpoint
+  activityLogs: {
+    getAll: async (token, params = {}) => {
+      const queryString = new URLSearchParams(params).toString();
+      const response = await fetch(`${API_BASE}/activity-logs?${queryString}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.json();
     },
   },
 };

@@ -19,6 +19,7 @@ const Header = ({ toggleSidebar }) => {
   const { user, logout, updateUserAvatar } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark"; // ✅ Get isDark flag
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -106,30 +107,26 @@ const Header = ({ toggleSidebar }) => {
 
   const avatarData = getAvatarSrc();
 
-  const currentAvatar = user?.avatar
-    ? AVATARS.find((a) => a.id === user.avatar)
-    : null;
-
   return (
-    <header className="h-16 bg-[#1A1A1A] border-b border-[#2A2A2A] flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
+    <header className={`h-16 ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-[#F9FAFB] border-gray-200"} border-b flex items-center justify-between px-4 lg:px-6 flex-shrink-0 transition-colors`}>
       {/* Left Section */}
       <div className="flex items-center gap-3">
         <button
           onClick={toggleSidebar}
-          className="p-2 rounded-lg hover:bg-white/5 transition-colors lg:hidden"
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2A2A2A] transition-colors lg:hidden"
         >
-          <Menu className="w-5 h-5 text-gray-400" />
+          <Menu className={`w-5 h-5 ${isDark ? "text-gray-400" : "text-gray-600"}`} />
         </button>
         <div className="hidden lg:flex flex-col">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-medium text-white">
+            <span className={`text-lg font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
               {greeting.text},
             </span>
-            <span className="text-lg font-semibold text-gray-200">
+            <span className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
               {user?.first_name ? `${user.first_name}` : user.role}
             </span>
           </div>
-          <span className="text-sm text-gray-500 -mt-0.5">{greeting.mood}</span>
+          <span className={`text-sm -mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>{greeting.mood}</span>
         </div>
       </div>
 
@@ -138,7 +135,7 @@ const Header = ({ toggleSidebar }) => {
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg hover:bg-[#1A1A1A] transition-colors"
+          className={`p-2 rounded-lg ${isDark ? "hover:bg-[#2A2A2A]" : "hover:bg-gray-100"} transition-colors`}
         >
           {theme === "dark" ? (
             <Sun className="w-5 h-5 text-gray-400 hover:text-yellow-500 transition-colors" />
@@ -148,12 +145,12 @@ const Header = ({ toggleSidebar }) => {
         </button>
 
         {/* Notifications */}
-        <div className="relative" ref={notificationRef}>
+        {/* <div className="relative" ref={notificationRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="p-2 rounded-lg hover:bg-white/5 transition-colors relative"
+            className={`p-2 rounded-lg ${isDark ? "hover:bg-[#2A2A2A]" : "hover:bg-gray-100"}  transition-colors relative`}
           >
-            <Bell className="w-5 h-5 text-gray-400 hover:text-white transition-colors" />
+            <Bell className={`w-5 h-5 ${isDark ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"} transition-colors`} />
             {unreadCount > 0 && (
               <span className="absolute top-1 right-1 w-4 h-4 bg-[#C3110C] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                 {unreadCount}
@@ -161,9 +158,9 @@ const Header = ({ toggleSidebar }) => {
             )}
           </button>
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-[#1A1A1A] rounded-lg shadow-xl border border-[#2A2A2A] overflow-hidden z-50">
-              <div className="p-3 border-b border-[#2A2A2A] flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white">
+            <div className={`absolute right-0 mt-2 w-80 rounded-lg shadow-xl border overflow-hidden z-50 ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`}>
+              <div className={`p-3 border-b flex items-center justify-between ${isDark ? "border-[#2A2A2A]" : "border-gray-200"}`}>
+                <h3 className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
                   Notifications
                 </h3>
                 <button className="text-xs text-[#C3110C] hover:text-[#E6501B] transition">
@@ -174,12 +171,12 @@ const Header = ({ toggleSidebar }) => {
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-3 border-b border-[#2A2A2A] hover:bg-white/5 cursor-pointer ${!notification.read ? "bg-[#C3110C]/5" : ""}`}
+                    className={`p-3 border-b cursor-pointer ${isDark ? "border-[#2A2A2A] hover:bg-[#2A2A2A]" : "border-gray-200 hover:bg-gray-50"} ${!notification.read ? "bg-[#C3110C]/5" : ""}`}
                   >
-                    <p className="text-sm text-gray-200">
+                    <p className={`text-sm ${isDark ? "text-gray-200" : "text-gray-700"}`}>
                       {notification.title}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className={`text-xs mt-1 ${isDark ? "text-gray-500" : "text-gray-500"}`}>
                       {notification.time}
                     </p>
                   </div>
@@ -187,22 +184,21 @@ const Header = ({ toggleSidebar }) => {
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* User Menu */}
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 transition-colors"
+            className={`flex items-center gap-2 p-2 rounded-lg ${isDark ? "hover:bg-[#2A2A2A]" : "hover:bg-gray-100"} transition-colors`}
           >
-            <div className="w-8 h-8 rounded-full bg-[#2A2A2A] border border-[#3A3A3A] overflow-hidden flex-shrink-0">
+            <div className={`w-8 h-8 rounded-full border overflow-hidden flex-shrink-0 ${isDark ? "bg-[#2A2A2A] border-[#3A3A3A]" : "bg-gray-100 border-gray-200"}`}>
               {avatarData ? (
                 <img
                   src={avatarData.src}
                   alt="Avatar"
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    // Fallback if the image link breaks
                     e.target.style.display = "none";
                     e.target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-r from-[#C3110C] to-[#E6501B] flex items-center justify-center text-white font-semibold text-sm">${user?.first_name?.charAt(0) || "A"}</div>`;
                   }}
@@ -213,23 +209,23 @@ const Header = ({ toggleSidebar }) => {
                 </div>
               )}
             </div>
-            <span className="hidden sm:block text-sm text-gray-300">
+            <span className={`hidden sm:block text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
               {user?.first_name
                 ? `${user.first_name} ${user.last_name || ""}`
                 : "Admin"}
             </span>
-            <ChevronDown className="w-4 h-4 text-gray-500" />
+            <ChevronDown className={`w-4 h-4 ${isDark ? "text-gray-500" : "text-gray-400"}`} />
           </button>
 
           {showUserMenu && (
-            <div className="absolute right-0 mt-2 w-56 bg-[#1A1A1A] rounded-lg shadow-xl border border-[#2A2A2A] overflow-hidden z-50">
-              <div className="px-4 py-3 border-b border-[#2A2A2A]">
-                <p className="text-sm font-medium text-white">
+            <div className={`absolute right-0 mt-2 w-56 rounded-lg shadow-xl border overflow-hidden z-50 ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`}>
+              <div className={`px-4 py-3 border-b ${isDark ? "border-[#2A2A2A]" : "border-gray-200"}`}>
+                <p className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                   {user?.first_name
                     ? `${user.first_name} ${user.last_name || ""}`
                     : "Admin User"}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>
                   {user?.email || "admin@onasislinks.com"}
                 </p>
                 <span className="inline-block mt-1 px-2 py-0.5 bg-[#C3110C]/10 text-[#C3110C] text-xs font-medium rounded-full capitalize">
@@ -242,22 +238,22 @@ const Header = ({ toggleSidebar }) => {
                     setShowUserMenu(false);
                     setShowProfileModal(true);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? "hover:bg-[#2A2A2A]" : "hover:bg-gray-100"} transition-colors text-left ${isDark ? "text-gray-300" : "text-gray-700"}`}
                 >
                   <User className="w-4 h-4" />
                   Profile
                 </button>
                 <Link
                   to="/dashboard/settings"
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors"
+                  className={`flex items-center gap-3 px-4 py-2 text-sm ${isDark ? "hover:bg-[#2A2A2A]" : "hover:bg-gray-100"} transition-colors ${isDark ? "text-gray-300" : "text-gray-700"}`}
                 >
                   <Settings className="w-4 h-4" />
                   Settings
                 </Link>
-                <hr className="my-1 border-[#2A2A2A]" />
+                <hr className={`my-1 ${isDark ? "border-[#2A2A2A]" : "border-gray-200"}`} />
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   Logout

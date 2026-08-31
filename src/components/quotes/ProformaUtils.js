@@ -479,7 +479,6 @@ export const downloadProformaPDF = async (quote) => {
 
     headStyles: {
       fillColor: [180, 180, 180],
-      fillColor: [180, 180, 180],
       textColor: 255,
       fontStyle: "bold",
     },
@@ -1107,7 +1106,6 @@ export const downloadProformaDOCX = async (quote) => {
 
             children: [
               new TextRun({
-                text: "Proforma Invoice",
                 text: "Proforma Invoice",
                 bold: true,
                 size: 30,

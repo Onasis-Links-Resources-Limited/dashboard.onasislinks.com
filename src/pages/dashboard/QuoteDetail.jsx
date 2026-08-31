@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, FileText } from "lucide-react";
-import quoteAPI from "../../api/quoteAPI";
+import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import QuoteCustomerInfo from "../../components/quotes/QuoteCustomerInfo";
 import QuoteItemsList from "../../components/quotes/QuoteItemsList";
@@ -21,40 +21,59 @@ const QuoteDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const token = localStorage.getItem("token");
 
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const [, setBusy] = useState(false);
   const [isProformaOpen, setIsProformaOpen] = useState(false);
   const [isRecordPOOpen, setIsRecordPOOpen] = useState(false);
 
-  const fetchQuote = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await quoteAPI.getById(id);
-      setQuote(data);
-    } catch (err) {
-      setError(
-        err?.status === 404
-          ? `Quote ${id} not found.`
-          : "Unable to load the requested quote.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
   useEffect(() => {
-    fetchQuote();
-  }, [fetchQuote]);
+    let isActive = true;
+
+    const loadQuote = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const result = await api.quotes.getOne(token, id);
+        const data = result.data || result;
+
+        if (!isActive) return;
+        setQuote(data);
+      } catch (err) {
+        if (!isActive) return;
+
+        setError(
+          err?.response?.status === 404
+            ? `Quote ${id} not found.`
+            : "Unable to load the requested quote.",
+        );
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadQuote();
+
+    return () => {
+      isActive = false;
+    };
+  }, [id, token]);
 
   const handleStatusChange = async (targetQuote, status) => {
     setBusy(true);
     try {
-      const updated = await quoteAPI.updateStatus(targetQuote.id, status);
+      const result = await api.quotes.updateStatus(
+        token,
+        targetQuote.id,
+        status,
+      );
+      const updated = result.data || result;
       setQuote(updated);
       toast.success(`Quote ${status} successfully.`);
     } catch {
@@ -67,7 +86,7 @@ const QuoteDetail = () => {
   const handleDelete = async (targetQuote) => {
     setBusy(true);
     try {
-      await quoteAPI.delete(targetQuote.id);
+      await api.quotes.delete(token, targetQuote.id);
       toast.success(`Quote ${targetQuote.id} deleted successfully.`);
       navigate("/dashboard/quotes");
     } catch {
@@ -80,7 +99,8 @@ const QuoteDetail = () => {
   const handleGenerateProforma = async (payload) => {
     setBusy(true);
     try {
-      const updated = await quoteAPI.generateProforma(id, payload);
+      const result = await api.quotes.generateProforma(token, id, payload);
+      const updated = result.data || result;
       setQuote(updated);
       setIsProformaOpen(false);
       toast.success("Proforma Invoice generated successfully.");
@@ -94,7 +114,8 @@ const QuoteDetail = () => {
   const handleRecordPurchaseOrder = async (payload) => {
     setBusy(true);
     try {
-      const updated = await quoteAPI.recordPurchaseOrder(id, payload);
+      const result = await api.quotes.recordPO(token, id, payload);
+      const updated = result.data || result;
       setQuote(updated);
       setIsRecordPOOpen(false);
       toast.success("Purchase Order recorded successfully.");
@@ -108,15 +129,15 @@ const QuoteDetail = () => {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-48 rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse" />
+        <div className="h-8 w-48 rounded-lg bg-gray-200 dark:bg-[#1A1A1A] animate-pulse" />
         <div className="grid gap-6 xl:grid-cols-[1.6fr_0.95fr]">
           <div className="space-y-4">
-            <div className="h-40 rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-            <div className="h-72 rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+            <div className="h-40 rounded-2xl bg-gray-200 dark:bg-[#1A1A1A] animate-pulse" />
+            <div className="h-72 rounded-2xl bg-gray-200 dark:bg-[#1A1A1A] animate-pulse" />
           </div>
           <div className="space-y-4">
-            <div className="h-40 rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-            <div className="h-40 rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+            <div className="h-40 rounded-2xl bg-gray-200 dark:bg-[#1A1A1A] animate-pulse" />
+            <div className="h-40 rounded-2xl bg-gray-200 dark:bg-[#1A1A1A] animate-pulse" />
           </div>
         </div>
       </div>
@@ -138,21 +159,25 @@ const QuoteDetail = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] rounded-2xl p-6 shadow-sm">
         <div className="space-y-3">
           <button
             onClick={() => navigate("/dashboard/quotes")}
-            className="inline-flex items-center gap-2 text-sm font-medium text-[#C3110C] hover:text-[#a80e0a]"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#E6501B] hover:text-[#a80e0a]"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Quotes
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
               Quote Details
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Review and manage quote {quote.id} for {quote.customer.name}.
+              Review and manage quote{" "}
+              <span className="font-bold text-[#E6501B]">
+                {quote.quoteNumber}
+              </span>{" "}
+              for <span className="font-bold">{quote.customer?.name}</span>.
             </p>
           </div>
         </div>
@@ -163,7 +188,7 @@ const QuoteDetail = () => {
               Total Amount
             </p>
             <p className="text-lg font-semibold text-gray-900 dark:text-white">
-              {formatCurrency(quote.summary.totalAmount)}
+              {formatCurrency(quote.summary?.totalAmount || 0)}
             </p>
           </div>
           <StatusBadge status={quote.status} />
@@ -174,22 +199,22 @@ const QuoteDetail = () => {
       <div className="grid gap-6 xl:grid-cols-[1.6fr_0.95fr]">
         <div className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+            <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] rounded-2xl p-5">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
                 Quote Information
               </h2>
               <div className="grid gap-3 text-sm text-gray-600 dark:text-gray-300">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-1">
                   <span className="font-medium text-gray-900 dark:text-white">
                     Quote ID
                   </span>
-                  <span>{quote.id}</span>
+                  <span className="text-xs">{quote.id}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-gray-900 dark:text-white">
                     Quote Number
                   </span>
-                  <span>{quote.quoteNumber}</span>
+                  <span>{quote.quoteNumber || quote.quote_number}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-gray-900 dark:text-white">
@@ -201,17 +226,16 @@ const QuoteDetail = () => {
                   <span className="font-medium text-gray-900 dark:text-white">
                     Valid Until
                   </span>
-                  <span>{quote.validUntil}</span>
+                  <span>{formatDate(quote.validUntil || "—")}</span>
                 </div>
               </div>
             </div>
             <QuoteCustomerInfo customer={quote.customer} />
           </div>
 
-          <QuoteItemsList items={quote.items} />
+          <QuoteItemsList items={quote.items || []} />
           <QuoteNotes notes={quote.notes} />
-
-          <QuoteTimeline timeline={quote.timeline} />
+          <QuoteTimeline timeline={quote.timeline || []} />
         </div>
 
         <div className="space-y-6">
@@ -229,7 +253,7 @@ const QuoteDetail = () => {
           />
 
           {quote.proforma && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-gray-800 rounded-xl p-5">
               <div className="flex items-center justify-between gap-4 mb-4">
                 <div>
                   <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -252,20 +276,26 @@ const QuoteDetail = () => {
                   <span className="font-medium text-gray-900 dark:text-white">
                     Sent
                   </span>
-                  <span>{quote.proforma.sentDate}</span>
+                  <span>
+                    {formatDate(
+                      quote.proforma.sentDate ||
+                        quote.proforma.generatedDate ||
+                        "—",
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900 dark:text-white">
                     Valid Until
                   </span>
-                  <span>{quote.proforma.validUntil}</span>
+                  <span>{formatDate(quote.proforma.validUntil || "—")}</span>
                 </div>
               </div>
             </div>
           )}
 
           {quote.purchaseOrder && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-5">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
                 Purchase Order
               </h2>
@@ -280,7 +310,7 @@ const QuoteDetail = () => {
                   <span className="font-medium text-gray-900 dark:text-white">
                     Received
                   </span>
-                  <span>{quote.purchaseOrder.receivedDate}</span>
+                  <span>{quote.purchaseOrder.receivedDate || "—"}</span>
                 </div>
               </div>
             </div>
