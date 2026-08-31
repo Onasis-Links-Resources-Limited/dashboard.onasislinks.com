@@ -171,7 +171,7 @@ const Categories = () => {
 
   return (
     <div
-      className={`relative z-10 min-h-screen p-6 transition-colors duration-300`}
+      className={`relative z-50 min-h-screen p-6 transition-colors duration-300`}
     >
       {/* DELETE CONFIRMATION MODAL */}
       {deleteTarget && (

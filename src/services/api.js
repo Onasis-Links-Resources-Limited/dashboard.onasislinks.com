@@ -151,6 +151,14 @@ export const api = {
       });
       return response.json();
     },
+
+    exportCSV: async (token, params = {}) => {
+      const queryString = new URLSearchParams(params).toString();
+      const response = await fetch(`${API_BASE}/users/export?${queryString}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.text(); // For CSV, we just get text back!
+    },
   },
 
   // Quotes endpoint
@@ -308,7 +316,7 @@ export const api = {
     },
   },
 
-    // Products endpoint
+  // Products endpoint
   products: {
     getAll: async (token, params = {}) => {
       const queryString = new URLSearchParams(params).toString();
@@ -352,7 +360,7 @@ export const api = {
     },
   },
 
-    // Settings endpoint
+  // Settings endpoint
   settings: {
     getCompany: async (token) => {
       const response = await fetch(`${API_BASE}/settings/company`, {
@@ -360,7 +368,7 @@ export const api = {
       });
       return response.json();
     },
-    
+
     updateCompany: async (token, data) => {
       const response = await fetch(`${API_BASE}/settings/company`, {
         method: "PUT",
@@ -372,14 +380,14 @@ export const api = {
       });
       return response.json();
     },
-    
+
     getNotifications: async (token) => {
       const response = await fetch(`${API_BASE}/settings/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.json();
     },
-    
+
     updateNotifications: async (token, data) => {
       const response = await fetch(`${API_BASE}/settings/notifications`, {
         method: "PUT",

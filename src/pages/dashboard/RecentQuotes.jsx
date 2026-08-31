@@ -11,6 +11,8 @@ const RecentQuotes = ({ data }) => {
       approved: `bg-green-100 text-green-800 ${isDark ? "dark:bg-green-900/30 dark:text-green-400" : ""}`,
       rejected: `bg-red-100 text-red-800 ${isDark ? "dark:bg-red-900/30 dark:text-red-400" : ""}`,
       completed: `bg-[#C3110C]/10 text-[#C3110C] ${isDark ? "dark:bg-[#C3110C]/20" : ""}`,
+      expired: `bg-gray-100 text-gray-700 ${isDark ? "dark:text-gray-400 dark:bg-gray-800" : ""}`,
+      quoted: `bg-orange-100 text-orange-800 ${isDark ? "dark:bg-orange-900/30 dark:text-orange-300" : ""}`,
     };
     return map[status] || map.pending;
   };
@@ -21,6 +23,8 @@ const RecentQuotes = ({ data }) => {
       approved: "bg-green-500",
       rejected: "bg-red-500",
       completed: "bg-[#C3110C]",
+      expired: "bg-gray-500",
+      quoted: "bg-orange-500"
     };
     return map[status] || map.pending;
   };
@@ -34,10 +38,9 @@ const RecentQuotes = ({ data }) => {
         className={`flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b ${isDark ? "border-[#2A2A2A]" : "border-gray-200"}`}
       >
         <h3
-          className={`text-sm sm:text-base font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+          className={`text-sm sm:text-base font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-gray-900"}`}
         >
-          <i className="fas fa-file-invoice text-[#C3110C] mr-2"></i> Recent
-          Quotes
+          <FileText size={16} className="text-[#C3110C]" /> Recent Quotes
         </h3>
       </div>
 

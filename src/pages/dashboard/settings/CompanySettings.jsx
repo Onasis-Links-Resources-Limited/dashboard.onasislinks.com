@@ -5,13 +5,53 @@ import { RotateCcw, Save, Loader2 } from "lucide-react";
 import { useSettingsStore, DEFAULT_COMPANY } from "../../../store/settingsStore.js";
 import { useTheme } from "../../../context/ThemeContext";
 
+const CompanySettingsSkeleton = ({ cardClasses, isDark }) => (
+  <div className="space-y-6">
+    <div className={cardClasses}>
+      <div className={`h-5 w-32 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+      <div className={`h-3 w-48 rounded animate-pulse mt-1 mb-4 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i}>
+            <div className={`h-3 w-20 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+            <div className={`h-9 w-full rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className={cardClasses}>
+      <div className={`h-5 w-24 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+      <div className={`h-3 w-48 rounded animate-pulse mt-1 mb-4 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i}>
+            <div className={`h-3 w-20 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+            <div className={`h-9 w-full rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className={cardClasses}>
+      <div className={`h-5 w-24 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+      <div className={`h-3 w-48 rounded animate-pulse mt-1 mb-4 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i}>
+            <div className={`h-3 w-20 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+            <div className={`h-9 w-full rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 const CompanySettings = () => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
   const stored = useSettingsStore((s) => s.company);
   const updateCompany = useSettingsStore((s) => s.updateCompany);
-  // const updateCompanyBank = useSettingsStore((s) => s.updateCompanyBank);
   const resetCompany = useSettingsStore((s) => s.resetCompany);
   const fetchSettings = useSettingsStore((s) => s.fetchSettings);
   const loading = useSettingsStore((s) => s.loading);
@@ -57,13 +97,13 @@ const CompanySettings = () => {
     toast("Reverted to default settings.");
   };
 
-  if (loading) return <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-[#C3110C]" /></div>;
-
   const inputClasses = `w-full border rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none transition ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-200 bg-white text-gray-900"}`;
   const cardClasses = `rounded-xl p-5 border shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`;
   const titleClasses = `text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`;
   const descClasses = `text-xs mt-0.5 mb-4 ${isDark ? "text-gray-400" : "text-gray-500"}`;
   const labelClasses = `block text-xs font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-600"}`;
+
+  if (loading) return <CompanySettingsSkeleton cardClasses={cardClasses} isDark={isDark} />;
 
   return (
     <div className="space-y-6">
@@ -71,7 +111,6 @@ const CompanySettings = () => {
         <h2 className={titleClasses}>Company Details</h2>
         <p className={descClasses}>Appears on the letterhead of every generated Proforma Invoice.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* ... all fields ... */}
           <div>
             <label className={labelClasses}>Company Name</label>
             <input value={form.name} onChange={(e) => set("name", e.target.value)} className={inputClasses} />

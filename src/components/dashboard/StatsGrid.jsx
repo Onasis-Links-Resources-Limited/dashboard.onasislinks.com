@@ -2,7 +2,7 @@ import { useTheme } from "../../context/ThemeContext";
 import CountUpModule from "react-countup";
 
 const CountUp = CountUpModule.default || CountUpModule;
-import { Box, FileText, User, Star } from "lucide-react";
+import { Box, FileText, Users, Star } from "lucide-react";
 
 // Calculate percentage change
 const calculateChange = (current, previous) => {
@@ -71,7 +71,7 @@ const StatsGrid = ({ stats = {} }) => {
   const statItems = [
     { label: "Products", value: stats.total_products || 0, previousValue: stats.previous_products || 0, icon: Box, color: "blue" },
     { label: "Quotes", value: stats.total_quotes || 0, previousValue: stats.previous_quotes || 0, icon: FileText, color: "purple" },
-    { label: "Customers", value: stats.total_customers || 0, previousValue: stats.previous_customers || 0, icon: User, color: "red" },
+    { label: "Customers", value: stats.total_customers || 0, previousValue: stats.previous_customers || 0, icon: Users, color: "red" },
     { label: "Satisfaction", value: `${stats.satisfaction || 0}%`, previousValue: stats.previous_satisfaction || 0, icon: Star, color: "orange" },
   ];
 

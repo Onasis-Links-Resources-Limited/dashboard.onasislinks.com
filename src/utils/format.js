@@ -12,7 +12,7 @@ export const formatNumber = (number) => {
 };
 
 export const formatPercentage = (value) => {
-  return `${Math.round(value)}%`;
+  return `${Math.min(value)}%`;
 };
 
 export const formatStatus = (status) => {

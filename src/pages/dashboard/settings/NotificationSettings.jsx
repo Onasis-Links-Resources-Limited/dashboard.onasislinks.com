@@ -5,6 +5,49 @@ import { Save, Info, Loader2 } from "lucide-react";
 import { useSettingsStore } from "../../../store/settingsStore.js";
 import { useTheme } from "../../../context/ThemeContext";
 
+// Skeleton loader component
+  const NotificationSkeleton = ({isDark}) => (
+    <div className="space-y-6">
+      <div className={`flex items-start gap-2 p-3 rounded-lg text-xs ${isDark ? "bg-blue-900/20" : "bg-blue-50"}`}>
+        <Info className="w-4 h-4 shrink-0 mt-0.5 text-gray-400" />
+        <span className={isDark ? "text-gray-400" : "text-gray-500"}>Loading preferences...</span>
+      </div>
+
+      <div className={`rounded-xl p-5 border shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`}>
+        <div className={`h-5 w-32 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+        <div className={`h-3 w-48 rounded animate-pulse mb-4 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+        
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="flex items-center justify-between gap-4 py-2">
+              <div className="space-y-1">
+                <div className={`h-4 w-48 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+                <div className={`h-3 w-64 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+              </div>
+              <div className={`w-10 h-6 rounded-full animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={`rounded-xl p-5 border shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`}>
+        <div className={`h-5 w-32 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+        <div className={`h-3 w-48 rounded animate-pulse mt-1 mb-4 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+        
+        <div className="space-y-4">
+          <div>
+            <div className={`h-3 w-32 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+            <div className={`h-9 w-full rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+          </div>
+          <div>
+            <div className={`h-3 w-32 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+            <div className={`h-9 w-full rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );  
+
 const NotificationSettings = () => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -43,7 +86,7 @@ const NotificationSettings = () => {
     setIsSaving(false);
   };
 
-  if (loading) return <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-[#C3110C]" /></div>;
+  if (loading) return <NotificationSkeleton />;
 
   const inputClasses = `w-full border rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none transition ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-200 bg-white text-gray-900"}`;
   const cardClasses = `rounded-xl p-5 border shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`;
@@ -51,7 +94,7 @@ const NotificationSettings = () => {
   return (
     <div className="space-y-6">
       <div className={`flex items-start gap-2 p-3 rounded-lg text-xs ${isDark ? "bg-blue-900/20 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
-        <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <span>These preferences are stored and will be used when email integration is connected.</span>
       </div>
 
@@ -64,7 +107,7 @@ const NotificationSettings = () => {
               <span className={`block text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>New quote request received</span>
               <span className={`block text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Alert staff when a client submits a request.</span>
             </span>
-            <span className="relative inline-flex flex-shrink-0 items-center">
+            <span className="relative inline-flex shrink-0 items-center">
               <input type="checkbox" checked={form.notifyOnNewQuoteRequest} onChange={(e) => set("notifyOnNewQuoteRequest", e.target.checked)} className="sr-only peer" />
               <span className={`w-10 h-6 rounded-full peer-checked:bg-[#C3110C] transition-colors ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
               <span className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
@@ -76,7 +119,7 @@ const NotificationSettings = () => {
               <span className={`block text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>Purchase Order recorded</span>
               <span className={`block text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Alert staff when an order is confirmed.</span>
             </span>
-            <span className="relative inline-flex flex-shrink-0 items-center">
+            <span className="relative inline-flex shrink-0 items-center">
               <input type="checkbox" checked={form.notifyOnPurchaseOrder} onChange={(e) => set("notifyOnPurchaseOrder", e.target.checked)} className="sr-only peer" />
               <span className={`w-10 h-6 rounded-full peer-checked:bg-[#C3110C] transition-colors ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
               <span className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />

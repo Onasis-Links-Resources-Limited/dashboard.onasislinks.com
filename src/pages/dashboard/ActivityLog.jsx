@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../services/api";
 import { 
-  Loader2, 
   Search, 
   LogIn, 
   LogOut, 
@@ -66,6 +65,33 @@ const getActionBadge = (action) => {
   return config;
 };
 
+// Skeleton Card for Activity Log
+const ActivityLogSkeleton = ({ isDark }) => (
+  <div className={`flex flex-col sm:flex-row gap-4 p-4 rounded-xl border ${isDark ? "border-[#2A2A2A]" : "border-gray-100"}`}>
+    {/* Avatar skeleton */}
+    <div className="flex items-center gap-3 sm:w-56 flex-shrink-0">
+      <div className={`w-12 h-12 rounded-full flex-shrink-0 animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className={`h-4 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+        <div className={`h-3 w-3/4 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+        <div className={`h-2 w-1/2 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+      </div>
+    </div>
+    
+    {/* Content skeleton */}
+    <div className="flex-1 min-w-0 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`h-6 w-24 rounded-full animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+          <div className={`h-4 w-16 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+        </div>
+        <div className={`h-4 w-20 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+      </div>
+      <div className={`h-12 rounded-md animate-pulse ${isDark ? "bg-[#242424]" : "bg-gray-50"}`} />
+    </div>
+  </div>
+);
+
 const ActivityLog = () => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -79,7 +105,7 @@ const ActivityLog = () => {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const response = await api.activityLogs.getAll(token, { search: "", limit: 200 }); // Fetch all for local filtering
+        const response = await api.activityLogs.getAll(token, { search: "", limit: 200 });
         if (response.success) setAllLogs(response.data);
       } catch (error) {
         console.error("Failed to fetch logs", error);
@@ -175,10 +201,14 @@ const ActivityLog = () => {
         </div>
       </div>
 
-      {/* Loading */}
+      {/* Loading Skeleton */}
       {loading ? (
-        <div className="p-8 text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#C3110C]" />
+        <div className={cardClasses}>
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <ActivityLogSkeleton key={i} isDark={isDark} />
+            ))}
+          </div>
         </div>
       ) : (
         <div className={cardClasses}>

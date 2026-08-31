@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, PackageCheck } from "lucide-react";
+import { X, PackageCheck, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
 /** Records the client's Purchase Order number/date once they accept the Proforma Invoice. */
@@ -28,7 +28,7 @@ const QuotePurchaseOrderPanel = ({ open, quote, onSubmit, onCancel }) => {
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="w-full max-w-md bg-white dark:bg-[#1A1A1A] rounded-2xl shadow-xl border border-gray-100 dark:border-[#2A2A2A] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
@@ -49,10 +49,15 @@ const QuotePurchaseOrderPanel = ({ open, quote, onSubmit, onCancel }) => {
         </div>
 
         <div className="p-5 space-y-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Enter the Purchase Order reference the customer sent for quote{" "}
-            {quote.id}. This confirms the order and moves it to Approved.
-          </p>
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="text-yellow-100" size={32}/>
+            <p className="text-sm text-yellow-100">
+              Enter the Purchase Order reference the customer sent for quote{" "}
+              <span className="text-[#E6501B]">{quote.quoteNumber}</span>
+              . This confirms the order and moves it to
+              Approved.
+            </p>
+          </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
               PO Number *
@@ -63,7 +68,7 @@ const QuotePurchaseOrderPanel = ({ open, quote, onSubmit, onCancel }) => {
               onChange={(e) => setPoNumber(e.target.value)}
               placeholder="e.g. PO-2026-0456"
               autoFocus
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm px-3 py-2 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
+              className="w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-3 py-2 focus:ring-1 focus:ring-[#C3110C] focus:border-transparent outline-none"
             />
           </div>
           <div>
@@ -74,12 +79,12 @@ const QuotePurchaseOrderPanel = ({ open, quote, onSubmit, onCancel }) => {
               type="date"
               value={poDate}
               onChange={(e) => setPoDate(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm px-3 py-2 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
+              className="w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-3 py-2 focus:ring-1 focus:ring-[#C3110C] focus:border-transparent outline-none"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4 bg-gray-50 dark:bg-gray-900/40 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-end gap-2 px-5 py-4 bg-gray-50 dark:bg-[#212121] border-t border-gray-100 dark:border-gray-700">
           <button
             onClick={onCancel}
             disabled={submitting}

@@ -145,7 +145,7 @@ const Header = ({ toggleSidebar }) => {
         </button>
 
         {/* Notifications */}
-        <div className="relative" ref={notificationRef}>
+        {/* <div className="relative" ref={notificationRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             className={`p-2 rounded-lg ${isDark ? "hover:bg-[#2A2A2A]" : "hover:bg-gray-100"}  transition-colors relative`}
@@ -184,7 +184,7 @@ const Header = ({ toggleSidebar }) => {
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* User Menu */}
         <div className="relative" ref={userMenuRef}>

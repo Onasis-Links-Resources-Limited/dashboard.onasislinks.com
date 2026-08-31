@@ -17,7 +17,7 @@ const SORT_OPTIONS = [
 ];
 
 const inputClasses =
-  "w-full border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm px-3 py-2 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none transition";
+  "w-full border border-gray-200 dark:border-[#2A2A2A] rounded-lg bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-3 py-2 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none transition";
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_FILTERS = {
@@ -43,7 +43,7 @@ const QuoteFilters = ({ filters, onChange }) => {
   const set = (patch) => onChange({ ...filters, ...patch });
 
   return (
-    <div className="p-4 border-b border-gray-200 dark:border-gray-800 space-y-3">
+    <div className="p-4 border-b border-gray-200 dark:border-[#2A2A2A] space-y-3">
       <div className="flex flex-col lg:flex-row gap-3">
         {/* Search */}
         <div className="relative flex-1 min-w-0">
@@ -120,7 +120,7 @@ const QuoteFilters = ({ filters, onChange }) => {
             }
             aria-label={`Sort order: ${filters.sortOrder === "asc" ? "ascending" : "descending"}`}
             title={filters.sortOrder === "asc" ? "Ascending" : "Descending"}
-            className="flex items-center justify-center p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+            className="flex items-center justify-center p-2 border border-gray-200 dark:border-[#2A2A2A] rounded-lg bg-white dark:bg-[#1A1A1A] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
           >
             <ArrowUpDown
               className={`w-4 h-4 transition-transform ${filters.sortOrder === "asc" ? "rotate-180" : ""}`}

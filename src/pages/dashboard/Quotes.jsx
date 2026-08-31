@@ -1,29 +1,16 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import quoteAPI from "../../api/quoteAPI";
+import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
+import { useTheme } from "../../context/ThemeContext";
 import QuoteToolbar from "../../components/quotes/QuoteToolbar";
-import QuoteFilters, {
-  DEFAULT_FILTERS,
-} from "../../components/quotes/QuoteFilters";
+import QuoteFilters, { DEFAULT_FILTERS } from "../../components/quotes/QuoteFilters";
 import QuoteTable from "../../components/quotes/QuoteTable";
 import Pagination from "../../components/common/Pagination";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import AddQuoteDialog from "../../components/quotes/AddQuoteDialog";
-import { useTheme } from "../../context/ThemeContext";
-
-const downloadCSV = (csvText, filename) => {
-  const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", filename);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
+import { cn } from "../../libs/utils";
 
 const hasActiveFilters = (filters) =>
   filters.search !== "" ||
@@ -36,6 +23,7 @@ const Quotes = () => {
   const { toast } = useToast();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const token = localStorage.getItem("token");
 
   const [quotes, setQuotes] = useState([]);
   const [meta, setMeta] = useState({
@@ -56,7 +44,11 @@ const Quotes = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkReason, setBulkReason] = useState("");
   const [addQuoteDialogOpen, setAddQuoteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
 
   const requestIdRef = useRef(0);
 
@@ -67,16 +59,21 @@ const Quotes = () => {
       setError(null);
 
       try {
-        const result = await quoteAPI.getAll({ ...filters, page, limit });
-        if (requestId !== requestIdRef.current) return; // stale response, ignore
-        setQuotes(result.data);
-        setMeta(result.meta);
-        setSelectedIds((prev) =>
-          prev.filter((id) => result.data.some((q) => q.id === id)),
-        );
-      } catch {
+        const result = await api.quotes.getAll(token, { ...filters, page, limit });
         if (requestId !== requestIdRef.current) return;
-        setError("Something went wrong while fetching quotes.");
+        
+        // Handle different response structures
+        const data = result.data || [];
+        const metaData = result.meta || { total: 0, page: 1, limit: 10, totalPages: 1 };
+        
+        setQuotes(data);
+        setMeta(metaData);
+        setSelectedIds((prev) =>
+          prev.filter((id) => data.some((q) => q.id === id))
+        );
+      } catch (err) {
+        if (requestId !== requestIdRef.current) return;
+        setError(err.response?.data?.message || "Something went wrong while fetching quotes.");
       } finally {
         if (requestId === requestIdRef.current) {
           setLoading(false);
@@ -84,7 +81,7 @@ const Quotes = () => {
         }
       }
     },
-    [filters, page, limit],
+    [filters, page, limit, token]
   );
 
   useEffect(() => {
@@ -106,11 +103,15 @@ const Quotes = () => {
     if (exporting) return;
     setExporting(true);
     try {
-      const csv = await quoteAPI.exportCSV(filters);
-      downloadCSV(
-        csv,
-        `quotes-export-${new Date().toISOString().slice(0, 10)}.csv`,
-      );
+      const blob = await api.quotes.export(token, filters);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `quotes-export-${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       toast.success("Quotes exported successfully.");
     } catch {
       toast.error("Failed to export quotes.");
@@ -121,7 +122,7 @@ const Quotes = () => {
 
   const toggleSelect = (id) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
 
@@ -130,7 +131,7 @@ const Quotes = () => {
       quotes.length > 0 && quotes.every((q) => selectedIds.includes(q.id));
     if (allOnPageSelected) {
       setSelectedIds((prev) =>
-        prev.filter((id) => !quotes.some((q) => q.id === id)),
+        prev.filter((id) => !quotes.some((q) => q.id === id))
       );
     } else {
       setSelectedIds((prev) => [
@@ -147,26 +148,16 @@ const Quotes = () => {
     setBulkDeleteOpen(true);
   };
 
-  const handleQuoteCreated = (newQuote) => {
-    setAddQuoteDialogOpen(false);
-    toast.success(`Quote ${newQuote.id} created successfully!`);
-    // Refresh the list
-    fetchQuotes({ isRefresh: true });
-    // Navigate to the new quote detail page
-    setTimeout(() => {
-      navigate(`/dashboard/quotes/${newQuote.id}`);
-    }, 500);
-  };
-
   const confirmBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await quoteAPI.bulkDelete(selectedIds);
+      await api.quotes.bulkDelete(token, selectedIds);
       toast.success(
-        `${selectedIds.length} quote${selectedIds.length > 1 ? "s" : ""} deleted successfully.`,
+        `${selectedIds.length} quote${selectedIds.length > 1 ? "s" : ""} deleted successfully.`
       );
       setSelectedIds([]);
       setBulkDeleteOpen(false);
+      setBulkReason("");
       fetchQuotes({ isRefresh: true });
     } catch {
       toast.error("Failed to delete quotes.");
@@ -174,6 +165,35 @@ const Quotes = () => {
       setBulkDeleting(false);
     }
   };
+
+  const confirmDeleteQuote = async () => {
+    setDeleting(true);
+    try {
+      await api.quotes.delete(token, deleteTarget.id);
+      toast.success(`Quote ${deleteTarget.quoteNumber || deleteTarget.id} deleted successfully.`);
+      setDeleteTarget(null);
+      setDeleteReason("");
+      fetchQuotes({ isRefresh: true });
+    } catch {
+      toast.error("Failed to delete quote.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleQuoteCreated = (newQuote) => {
+    setAddQuoteDialogOpen(false);
+    toast.success(`Quote ${newQuote.quoteNumber || newQuote.id} created successfully!`);
+    fetchQuotes({ isRefresh: true });
+    setTimeout(() => {
+      navigate(`/dashboard/quotes/${newQuote.id}`);
+    }, 500);
+  };
+
+  const cardClasses = cn(
+    "border rounded-xl overflow-hidden",
+    isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"
+  );
 
   return (
     <div className="space-y-6 p-6">
@@ -199,7 +219,7 @@ const Quotes = () => {
       </div>
 
       {/* Card containing filters + table + pagination */}
-      <div className={` ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"} rounded-xl overflow-hidden`}>
+      <div className={cardClasses}>
         <QuoteFilters filters={filters} onChange={handleFiltersChange} />
 
         <QuoteTable
@@ -211,6 +231,7 @@ const Quotes = () => {
           onToggleSelect={toggleSelect}
           onToggleSelectAll={toggleSelectAll}
           onView={(quote) => navigate(`/dashboard/quotes/${quote.id}`)}
+          onDelete={setDeleteTarget}
           hasActiveFilters={hasActiveFilters(filters)}
           onClearFilters={() => handleFiltersChange(DEFAULT_FILTERS)}
         />
@@ -231,6 +252,22 @@ const Quotes = () => {
         )}
       </div>
 
+      {/* Delete Single Quote Confirm */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={`Delete Quote ${deleteTarget?.quoteNumber || deleteTarget?.id}?`}
+        description="This will permanently remove this quote. This action cannot be undone."
+        confirmLabel="Delete"
+        danger
+        loading={deleting}
+        onConfirm={confirmDeleteQuote}
+        onCancel={() => { setDeleteTarget(null); setDeleteReason(""); }}
+        reason={deleteReason}
+        onReasonChange={setDeleteReason}
+        reasonPlaceholder="Optional: Reason for deletion..."
+      />
+
+      {/* Bulk Delete Confirm */}
       <ConfirmDialog
         open={bulkDeleteOpen}
         title={`Delete ${selectedIds.length} quote${selectedIds.length > 1 ? "s" : ""}?`}
@@ -239,7 +276,11 @@ const Quotes = () => {
         danger
         loading={bulkDeleting}
         onConfirm={confirmBulkDelete}
-        onCancel={() => setBulkDeleteOpen(false)}
+        onCancel={() => { setBulkDeleteOpen(false); setBulkReason(""); }}
+        reason={bulkReason}
+        onReasonChange={setBulkReason}
+        reasonPlaceholder="Optional: Reason for bulk deletion..."
+        showReason={true}
       />
 
       <AddQuoteDialog
