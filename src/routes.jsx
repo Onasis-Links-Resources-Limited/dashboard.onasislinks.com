@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import DashboardLayout from "./components/layout/DashboardLayout";
+import DashboardLayout from "./components/Layout/DashboardLayout";
 import Login from "./pages/auth/Login";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Products from "./pages/dashboard/Products";
@@ -13,7 +13,7 @@ import Analytics from "./pages/dashboard/Analytics";
 import Settings from "./pages/dashboard/Settings";
 import NotFound from "./pages/errors/NotFound";
 import Unauthorized from "./pages/errors/Unauthorized";
-import AuthLayout from "./components/layout/AuthLayout";
+import AuthLayout from "./components/Layout/AuthLayout";
 import QuoteDetail from "./pages/dashboard/QuoteDetail";
 import CompanySettings from "./pages/dashboard/settings/CompanySettings";
 import RolesSettings from "./pages/dashboard/settings/RolesSettings";

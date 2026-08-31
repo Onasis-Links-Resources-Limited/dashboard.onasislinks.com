@@ -111,7 +111,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Sidebar */}
       <aside
         className={`
-        fixed lg:static inset-y-0 left-0 z-50
+        fixed lg:static inset-y-0 left-0 z-9999
         w-64 ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-[#F9FAFB] border-gray-200"}
         border-r
         transition-all duration-300 ease-in-out
