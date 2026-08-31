@@ -111,6 +111,7 @@ const QuoteStatus = ({ data = {} }) => {
         chartRef.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isDark]);
 
   return (
@@ -163,9 +164,9 @@ const QuoteStatus = ({ data = {} }) => {
       >
         <div
           className="
-            w-[120px] h-[120px]
-            sm:w-[140px] sm:h-[140px]
-            relative flex-shrink-0
+            w-30 h-30
+            sm:w-35 sm:h-35
+            relative shrink-0
           "
         >
           {statusData.length > 0 ? (
@@ -242,7 +243,7 @@ const QuoteStatus = ({ data = {} }) => {
                   className="
                       w-3 h-3
                       rounded-full
-                      flex-shrink-0
+                      shrink-0
                     "
                   style={{
                     backgroundColor: item.color,
