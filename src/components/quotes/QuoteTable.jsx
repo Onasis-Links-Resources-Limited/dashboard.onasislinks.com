@@ -4,7 +4,7 @@ import EmptyState from "../common/EmptyState";
 import { TableSkeleton, CardListSkeleton } from "../common/Skeleton.jsx";
 import { formatCurrency } from "../../utils/format";
 import { formatDate } from "../../libs/utils";
-import { downloadProformaPDF } from "./proformaUtils.js";
+import { downloadProformaPDF } from "./proformaUtils";
 import { useToast } from "../../context/ToastContext";
 
 const COLUMN_COUNT = 8;
