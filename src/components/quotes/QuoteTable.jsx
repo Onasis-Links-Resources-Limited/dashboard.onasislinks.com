@@ -4,7 +4,7 @@ import EmptyState from "../common/EmptyState";
 import { TableSkeleton, CardListSkeleton } from "../common/Skeleton.jsx";
 import { formatCurrency } from "../../utils/format";
 import { formatDate } from "../../libs/utils";
-import { downloadProformaPDF } from "./proformaUtils.js";
+import { downloadProformaPDF } from "./proformaUtils";
 import { useToast } from "../../context/ToastContext";
 
 const COLUMN_COUNT = 8;
@@ -185,7 +185,7 @@ const QuoteTable = ({
                   checked={selectedIds.includes(quote.id)}
                   onChange={() => onToggleSelect(quote.id)}
                   aria-label={`Select quote ${quote.id}`}
-                  className="mt-1 rounded border-gray-300 dark:border-gray-600 text-[#C3110C] focus:ring-[#C3110C] flex-shrink-0"
+                  className="mt-1 rounded border-gray-300 dark:border-gray-600 text-[#C3110C] focus:ring-[#C3110C] shrink-0"
                 />
                 <div className="min-w-0">
                   <button
