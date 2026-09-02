@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, FileText, Plus } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
-import { formatMoney } from "./proformaUtils";
+import { formatMoney } from "./ProformaUtils";
 
 const defaultValidUntil = () => {
   const d = new Date();
@@ -125,12 +125,12 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   // Helper function to parse specifications
   const parseSpecifications = (specs) => {
     if (!specs) return null;
-    
+
     // If it's already an object or array, return it
-    if (typeof specs === 'object') return specs;
-    
+    if (typeof specs === "object") return specs;
+
     // If it's a string, try to parse it as JSON
-    if (typeof specs === 'string') {
+    if (typeof specs === "string") {
       try {
         const parsed = JSON.parse(specs);
         return parsed;
@@ -139,16 +139,16 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         return specs;
       }
     }
-    
+
     return null;
   };
 
   // Helper to render specifications
   const renderSpecifications = (specs) => {
     const parsed = parseSpecifications(specs);
-    
+
     if (!parsed) return null;
-    
+
     // If it's an array, render each item
     if (Array.isArray(parsed)) {
       return (
@@ -162,9 +162,9 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         </div>
       );
     }
-    
+
     // If it's an object (not array), render key-value pairs
-    if (typeof parsed === 'object') {
+    if (typeof parsed === "object") {
       return (
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
           {Object.entries(parsed).map(([key, value]) => (
@@ -176,7 +176,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         </div>
       );
     }
-    
+
     // If it's a string, display it directly
     return (
       <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
