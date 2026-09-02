@@ -10,7 +10,7 @@ import {
   downloadProformaCSV,
   downloadProformaPDF,
   downloadProformaDOCX,
-} from "./proformaUtils";
+} from "./ProformaUtils";
 import { useToast } from "../../context/ToastContext";
 
 const FORMATS = [
