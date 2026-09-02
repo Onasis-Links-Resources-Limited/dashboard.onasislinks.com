@@ -37,7 +37,7 @@ const RolesSettings = () => {
   return (
     <div className="space-y-6">
       <div className={`flex items-start gap-2 p-3 rounded-lg text-xs ${isDark ? "bg-blue-900/20 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
-        <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
         <span>
           This is a reference view of the permissions defined in code (
           <code>src/constants/roles.js</code>) and enforced by every protected route and action. Changing role capabilities currently requires a code change — ask engineering to update this list rather than expecting a toggle here to take effect.

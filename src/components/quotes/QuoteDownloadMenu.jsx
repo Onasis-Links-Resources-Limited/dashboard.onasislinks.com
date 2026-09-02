@@ -81,9 +81,9 @@ const QuoteDownloadMenu = ({ quote, disabled = false, label = "Download" }) => {
               className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors disabled:opacity-50"
             >
               {generating === key ? (
-                <span className="w-4 h-4 border-2 border-gray-300 border-t-[#C3110C] rounded-full animate-spin flex-shrink-0" />
+                <span className="w-4 h-4 border-2 border-gray-300 border-t-[#C3110C] rounded-full animate-spin shrink-0" />
               ) : (
-                <Icon className="w-4 h-4 flex-shrink-0" />
+                <Icon className="w-4 h-4 shrink-0" />
               )}
               {fLabel}
             </button>
