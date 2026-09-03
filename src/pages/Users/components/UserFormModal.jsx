@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, ShieldCheck } from "lucide-react";
+import { X, ShieldCheck, Key, Info } from "lucide-react";
 import { useTheme } from "../../../context/ThemeContext";
 import { cn } from "../../../libs/utils";
 import { ROLE_OPTIONS, ROLE_CONFIG, STATUS_OPTIONS } from "../constant";
@@ -13,6 +13,7 @@ const EMPTY_FORM = {
   department: "",
   role: "viewer",
   status: "active",
+  password: "",
 };
 
 const getInitialForm = (user) =>
@@ -25,6 +26,7 @@ const getInitialForm = (user) =>
         department: user.department || "",
         role: user.role || "viewer",
         status: user.status || "active",
+        password: "", // Never pre-fill password for editing
       }
     : { ...EMPTY_FORM };
 
@@ -49,6 +51,24 @@ const UserFormModalContent = ({ open, user, onSave, onCancel }) => {
     if (!form.last_name.trim()) next.last_name = "Last name is required.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = "Please enter a valid email.";
     if (!form.role) next.role = "Please select a role.";
+    
+    // Password validation - only for new users
+    if (!isEdit) {
+      // Password is optional, but if provided, validate it
+      if (form.password && form.password.length < 8) {
+        next.password = "Password must be at least 8 characters.";
+      }
+      if (form.password && !/[A-Z]/.test(form.password)) {
+        next.password = "Password must contain at least one uppercase letter.";
+      }
+      if (form.password && !/[a-z]/.test(form.password)) {
+        next.password = "Password must contain at least one lowercase letter.";
+      }
+      if (form.password && !/[0-9]/.test(form.password)) {
+        next.password = "Password must contain at least one number.";
+      }
+    }
+    
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -58,7 +78,12 @@ const UserFormModalContent = ({ open, user, onSave, onCancel }) => {
     if (!validate()) return;
     setSaving(true);
     try {
-      await onSave(form);
+      // Only include password if it's provided (for new users)
+      const formData = { ...form };
+      if (isEdit || !formData.password) {
+        delete formData.password; // Don't send empty password for edit or if not provided
+      }
+      await onSave(formData);
     } finally {
       setSaving(false);
     }
@@ -112,6 +137,7 @@ const UserFormModalContent = ({ open, user, onSave, onCancel }) => {
           "overflow-y-auto p-5 space-y-4 flex-1",
           isDark ? "bg-[#1A1A1A]" : "bg-white"
         )}>
+          {/* Name Fields */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={cn("block text-xs font-medium mb-1", isDark ? "text-gray-300" : "text-gray-600")}>
@@ -143,6 +169,7 @@ const UserFormModalContent = ({ open, user, onSave, onCancel }) => {
             </div>
           </div>
 
+          {/* Email */}
           <div>
             <label className={cn("block text-xs font-medium mb-1", isDark ? "text-gray-300" : "text-gray-600")}>
               Email Address *
@@ -159,6 +186,7 @@ const UserFormModalContent = ({ open, user, onSave, onCancel }) => {
             )}
           </div>
 
+          {/* Phone & Department */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={cn("block text-xs font-medium mb-1", isDark ? "text-gray-300" : "text-gray-600")}>
@@ -184,6 +212,41 @@ const UserFormModalContent = ({ open, user, onSave, onCancel }) => {
             </div>
           </div>
 
+          {/* ⭐ NEW: Password Field - Only for new users */}
+          {!isEdit && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className={cn("text-xs font-medium", isDark ? "text-gray-300" : "text-gray-600")}>
+                  Password <span className={cn("text-xs", isDark ? "text-gray-500" : "text-gray-400")}>(Optional)</span>
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-[#E6501B]" />
+                  <span className={cn("text-[10px]", isDark ? "text-gray-500" : "text-gray-400")}>
+                    Auto-generate if left empty
+                  </span>
+                </div>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={form.password}
+                  onChange={(e) => setField("password", e.target.value)}
+                  placeholder="Leave blank to auto-generate"
+                  className={cn(modalInput, errors.password && "border-red-400")}
+                />
+                <Key className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              </div>
+              {errors.password && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.password}</p>
+              )}
+              <p className={cn("text-[10px] mt-1", isDark ? "text-gray-500" : "text-gray-400")}>
+                A strong password will be auto-generated and sent to the user's email.
+                You can also set a custom password here.
+              </p>
+            </div>
+          )}
+
+          {/* Role & Status */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={cn("block text-xs font-medium mb-1", isDark ? "text-gray-300" : "text-gray-600")}>
@@ -218,12 +281,16 @@ const UserFormModalContent = ({ open, user, onSave, onCancel }) => {
             </div>
           </div>
 
+          {/* Info Box */}
           <div className={cn(
             "flex items-start gap-2 p-3 rounded-lg text-xs",
             isDark ? "bg-[#242424] text-gray-400" : "bg-gray-50 text-gray-500"
           )}>
             <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>Module-level permissions (read/write/delete/approve) are derived from the selected role.</span>
+            <span>
+              <strong>Auto-generated password:</strong> A secure password will be generated and sent to the user's email.
+              You can also set a custom password above.
+            </span>
           </div>
         </div>
 
