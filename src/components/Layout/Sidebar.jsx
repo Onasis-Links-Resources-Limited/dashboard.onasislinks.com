@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardClock,
+  Mail,
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -75,6 +76,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: [ROLES.ADMIN, ROLES.MANAGER],
     },
     {
+      title: "Newsletter",
+      icon: Mail,
+      path: "/dashboard/newsletter",
+      roles: [ROLES.ADMIN, ROLES.MANAGER],
+    },
+    {
       title: "Settings",
       icon: Settings,
       path: "/dashboard/settings",
@@ -111,7 +118,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Sidebar */}
       <aside
         className={`
-        fixed lg:static inset-y-0 left-0 z-9999
+        fixed lg:static inset-y-0 left-0 z-9998
         w-64 ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-[#F9FAFB] border-gray-200"}
         border-r
         transition-all duration-300 ease-in-out
