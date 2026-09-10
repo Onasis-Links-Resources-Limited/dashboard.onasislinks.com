@@ -20,6 +20,7 @@ import RolesSettings from "./pages/dashboard/settings/RolesSettings";
 import NotificationSettings from "./pages/dashboard/settings/NotificationSettings";
 import AppearanceSettings from "./pages/dashboard/settings/AppearanceSettings";
 import ActivityLog from "./pages/dashboard/ActivityLog";
+import Newsletter from "./pages/dashboard/Newsletter";
 
 const AppRoutes = () => {
   return (
@@ -44,6 +45,7 @@ const AppRoutes = () => {
           {/* <Route path="/dashboard/categories/add" element={<CategoryForm />} /> */}
           <Route path="/dashboard/quotes" element={<Quotes />} />
           <Route path="/dashboard/quotes/:id" element={<QuoteDetail />} />
+          <Route path="/dashboard/newsletter" element={<Newsletter />} />
           <Route path="/dashboard/users" element={<Users />} />
           <Route path="/dashboard/analytics" element={<Analytics />} />
           <Route path="/dashboard/activity-logs" element={<ActivityLog />} />

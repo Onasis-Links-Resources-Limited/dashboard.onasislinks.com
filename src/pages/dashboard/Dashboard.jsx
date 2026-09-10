@@ -9,6 +9,7 @@ import QuoteStatus from "./QuoteStatus";
 import RecentQuotes from "./RecentQuotes";
 
 import DashboardSkeleton from "../../components/dashboard/DashboardSkeleton";
+import WelcomeCelebration from "../../components/dashboard/WelcomeCelebration";
 
 const Dashboard = () => {
   const { theme } = useTheme();
@@ -62,6 +63,7 @@ const Dashboard = () => {
         transition-colors duration-300
       "
     >
+      <WelcomeCelebration />
       <main>
         <div
           className="

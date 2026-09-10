@@ -411,6 +411,66 @@ export const api = {
       return response.json();
     },
   },
+
+    // Newsletter endpoint
+  newsletter: {
+    // Public: Subscribe
+    subscribe: async (data) => {
+      const response = await fetch(`${API_BASE}/newsletter/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    },
+
+    // Public: Unsubscribe
+    unsubscribe: async (id) => {
+      const response = await fetch(`${API_BASE}/newsletter/unsubscribe/${id}`);
+      return response.json();
+    },
+
+    // Dashboard: Get all subscribers
+    getSubscribers: async (token, params = {}) => {
+      const queryString = new URLSearchParams(params).toString();
+      const response = await fetch(
+        `${API_BASE}/newsletter/subscribers?${queryString}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.json();
+    },
+
+    // Dashboard: Get stats
+    getStats: async (token) => {
+      const response = await fetch(`${API_BASE}/newsletter/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.json();
+    },
+
+    // Dashboard: Delete subscriber
+    deleteSubscriber: async (token, id) => {
+      const response = await fetch(`${API_BASE}/newsletter/subscribers/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.json();
+    },
+
+    // Dashboard: Export CSV
+    exportCSV: async (token, params = {}) => {
+      const queryString = new URLSearchParams(params).toString();
+      const response = await fetch(
+        `${API_BASE}/newsletter/export?${queryString}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.blob();
+    },
+  },
 };
 
 export default api;
