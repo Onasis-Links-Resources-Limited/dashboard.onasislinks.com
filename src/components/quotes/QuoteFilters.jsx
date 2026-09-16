@@ -4,7 +4,7 @@ const STATUS_OPTIONS = [
   { value: "all", label: "All" },
   { value: "pending", label: "Pending" },
   { value: "quoted", label: "Quoted" },
-  { value: "approved", label: "Approved" },
+  { value: "accepted", label: "Accepted" },
   { value: "rejected", label: "Rejected" },
   { value: "completed", label: "Completed" },
   { value: "expired", label: "Expired" },

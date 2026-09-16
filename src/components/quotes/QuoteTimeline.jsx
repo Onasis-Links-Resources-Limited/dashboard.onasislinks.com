@@ -19,7 +19,7 @@ const QuoteTimeline = ({ timeline = [] }) => {
             </p>
             <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               <Clock className="w-3 h-3" />
-              <span>{event.date}</span>
+              <span>{new Date(event.date).toLocaleString()}</span>
               <span>·</span>
               <span>{event.user}</span>
             </div>

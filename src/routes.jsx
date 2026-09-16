@@ -21,6 +21,7 @@ import NotificationSettings from "./pages/dashboard/settings/NotificationSetting
 import AppearanceSettings from "./pages/dashboard/settings/AppearanceSettings";
 import ActivityLog from "./pages/dashboard/ActivityLog";
 import Newsletter from "./pages/dashboard/Newsletter";
+import Notifications from "./pages/dashboard/Notification";
 
 const AppRoutes = () => {
   return (
@@ -49,6 +50,7 @@ const AppRoutes = () => {
           <Route path="/dashboard/users" element={<Users />} />
           <Route path="/dashboard/analytics" element={<Analytics />} />
           <Route path="/dashboard/activity-logs" element={<ActivityLog />} />
+          <Route path="/dashboard/notifications" element={<Notifications />} />
           <Route path="/dashboard/settings" element={<Settings />}>
             <Route
               index

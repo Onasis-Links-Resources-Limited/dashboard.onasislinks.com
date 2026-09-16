@@ -12,7 +12,7 @@ import ConfirmDialog from "../common/ConfirmDialog";
 export const STATUS_TRANSITIONS = {
   pending: { label: "Pending", allowedActions: ["generateProforma", "reject"] },
   quoted: { label: "Quoted", allowedActions: ["recordPO", "reject"] },
-  approved: { label: "Approved", allowedActions: ["complete"] },
+  accepted: { label: "Accepted", allowedActions: ["complete"] },
   rejected: { label: "Rejected", allowedActions: [] },
   completed: { label: "Completed", allowedActions: [] },
   expired: { label: "Expired", allowedActions: [] },

@@ -29,7 +29,7 @@ const QuoteStatus = ({ data = {} }) => {
     color:
       key === "pending"
         ? "#F59E0B"
-        : key === "approved"
+        : key === "accepted"
           ? "#10B981"
           : key === "rejected"
             ? "#EF4444"

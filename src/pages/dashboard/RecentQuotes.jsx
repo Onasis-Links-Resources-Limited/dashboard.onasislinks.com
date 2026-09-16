@@ -8,7 +8,7 @@ const RecentQuotes = ({ data }) => {
   const getStatusBadge = (status) => {
     const map = {
       pending: `bg-yellow-100 text-yellow-800 ${isDark ? "dark:bg-yellow-900/30 dark:text-yellow-400" : ""}`,
-      approved: `bg-green-100 text-green-800 ${isDark ? "dark:bg-green-900/30 dark:text-green-400" : ""}`,
+      accepted: `bg-green-100 text-green-800 ${isDark ? "dark:bg-green-900/30 dark:text-green-400" : ""}`,
       rejected: `bg-red-100 text-red-800 ${isDark ? "dark:bg-red-900/30 dark:text-red-400" : ""}`,
       completed: `bg-[#C3110C]/10 text-[#C3110C] ${isDark ? "dark:bg-[#C3110C]/20" : ""}`,
       expired: `bg-gray-100 text-gray-700 ${isDark ? "dark:text-gray-400 dark:bg-gray-800" : ""}`,
@@ -20,7 +20,7 @@ const RecentQuotes = ({ data }) => {
   const getStatusDot = (status) => {
     const map = {
       pending: "bg-yellow-500",
-      approved: "bg-green-500",
+      accepted: "bg-green-500",
       rejected: "bg-red-500",
       completed: "bg-[#C3110C]",
       expired: "bg-gray-500",

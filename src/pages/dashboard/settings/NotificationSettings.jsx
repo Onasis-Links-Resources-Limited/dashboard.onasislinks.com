@@ -4,49 +4,85 @@ import toast from "react-hot-toast";
 import { Save, Info, Loader2 } from "lucide-react";
 import { useSettingsStore } from "../../../store/settingsStore.js";
 import { useTheme } from "../../../context/ThemeContext";
+import {
+  isPushSupported,
+  getPushPermission,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "../../../libs/push";
 
 // Skeleton loader component
-  const NotificationSkeleton = ({isDark}) => (
-    <div className="space-y-6">
-      <div className={`flex items-start gap-2 p-3 rounded-lg text-xs ${isDark ? "bg-blue-900/20" : "bg-blue-50"}`}>
-        <Info className="w-4 h-4 shrink-0 mt-0.5 text-gray-400" />
-        <span className={isDark ? "text-gray-400" : "text-gray-500"}>Loading preferences...</span>
-      </div>
+const NotificationSkeleton = ({ isDark }) => (
+  <div className="space-y-6">
+    <div
+      className={`flex items-start gap-2 p-3 rounded-lg text-xs ${isDark ? "bg-blue-900/20" : "bg-blue-50"}`}
+    >
+      <Info className="w-4 h-4 shrink-0 mt-0.5 text-gray-400" />
+      <span className={isDark ? "text-gray-400" : "text-gray-500"}>
+        Loading preferences...
+      </span>
+    </div>
 
-      <div className={`rounded-xl p-5 border shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`}>
-        <div className={`h-5 w-32 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-        <div className={`h-3 w-48 rounded animate-pulse mb-4 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-        
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="flex items-center justify-between gap-4 py-2">
-              <div className="space-y-1">
-                <div className={`h-4 w-48 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-                <div className={`h-3 w-64 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-              </div>
-              <div className={`w-10 h-6 rounded-full animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+    <div
+      className={`rounded-xl p-5 border shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`}
+    >
+      <div
+        className={`h-5 w-32 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+      />
+      <div
+        className={`h-3 w-48 rounded animate-pulse mb-4 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+      />
+
+      <div className="space-y-4">
+        {[1, 2].map((i) => (
+          <div key={i} className="flex items-center justify-between gap-4 py-2">
+            <div className="space-y-1">
+              <div
+                className={`h-4 w-48 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+              />
+              <div
+                className={`h-3 w-64 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+              />
             </div>
-          ))}
-        </div>
+            <div
+              className={`w-10 h-6 rounded-full animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+            />
+          </div>
+        ))}
       </div>
+    </div>
 
-      <div className={`rounded-xl p-5 border shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`}>
-        <div className={`h-5 w-32 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-        <div className={`h-3 w-48 rounded animate-pulse mt-1 mb-4 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-        
-        <div className="space-y-4">
-          <div>
-            <div className={`h-3 w-32 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-            <div className={`h-9 w-full rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-          </div>
-          <div>
-            <div className={`h-3 w-32 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-            <div className={`h-9 w-full rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
-          </div>
+    <div
+      className={`rounded-xl p-5 border shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`}
+    >
+      <div
+        className={`h-5 w-32 rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+      />
+      <div
+        className={`h-3 w-48 rounded animate-pulse mt-1 mb-4 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+      />
+
+      <div className="space-y-4">
+        <div>
+          <div
+            className={`h-3 w-32 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+          />
+          <div
+            className={`h-9 w-full rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+          />
+        </div>
+        <div>
+          <div
+            className={`h-3 w-32 rounded animate-pulse mb-1 ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+          />
+          <div
+            className={`h-9 w-full rounded animate-pulse ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+          />
         </div>
       </div>
     </div>
-  );  
+  </div>
+);
 
 const NotificationSettings = () => {
   const { theme } = useTheme();
@@ -60,6 +96,45 @@ const NotificationSettings = () => {
   const [form, setForm] = useState(stored);
   const [dirty, setDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [permission, setPermission] = useState("default");
+  const [subscribing, setSubscribing] = useState(false);
+
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    setPermission(getPushPermission());
+  }, []);
+
+  const handleTogglePush = async () => {
+    if (!isPushSupported()) {
+      toast.error("Your browser doesn't support push notifications.");
+      return;
+    }
+
+    if (permission === "denied") {
+      toast.error(
+        "Notifications are blocked. Enable them in your browser settings.",
+      );
+      return;
+    }
+
+    setSubscribing(true);
+    try {
+      if (permission === "granted") {
+        await unsubscribeFromPush(token);
+        setPermission("default");
+        toast.success("Notifications turned off on this device.");
+      } else {
+        await subscribeToPush(token);
+        setPermission("granted");
+        toast.success("Notifications enabled on this device.");
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -86,42 +161,103 @@ const NotificationSettings = () => {
     setIsSaving(false);
   };
 
-  if (loading) return <NotificationSkeleton />;
+  if (loading) return <NotificationSkeleton isDark={isDark} />;
 
   const inputClasses = `w-full border rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none transition ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-200 bg-white text-gray-900"}`;
   const cardClasses = `rounded-xl p-5 border shadow-sm ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}`;
 
   return (
     <div className="space-y-6">
-      <div className={`flex items-start gap-2 p-3 rounded-lg text-xs ${isDark ? "bg-blue-900/20 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
+      <div
+        className={`flex items-start gap-2 p-3 rounded-lg text-xs ${isDark ? "bg-blue-900/20 text-blue-300" : "bg-blue-50 text-blue-700"}`}
+      >
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
-        <span>These preferences are stored and will be used when email integration is connected.</span>
+        <span>Changes to internal alerts apply immediately. Browser notifications are per-device.</span>
       </div>
 
       <div className={cardClasses}>
-        <h2 className={`text-sm font-semibold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}>Internal Alerts</h2>
-        <p className={`text-xs mb-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Notify your team when activity happens.</p>
+        <h2>Browser Notifications</h2>
+        <p className={`text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+          Get desktop and mobile alerts when quotes are accepted or proformas
+          are sent.
+        </p>
+
+        {permission === "denied" ? (
+          <div className="p-3 *:bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm my-3">
+            Notifications are blocked for this site. Click the padlock in your
+            browser's address bar and allow notifications, then reload this
+            page.
+          </div>
+        ) : (
+          <button onClick={handleTogglePush} disabled={subscribing} className={`my-3 px-4 py-2 rounded-lg text-sm font-medium ${isDark ? "bg-[#2A2A2A] text-white hover:bg-[#3A3A3A]" : "bg-gray-200 text-gray-900 hover:bg-gray-300"} transition-colors disabled:opacity-50`}>
+            {permission === "granted"
+              ? "Turn off on this device"
+              : "Enable on this device"}
+          </button>
+        )}
+        <h2
+          className={`text-sm font-semibold mb-1 ${isDark ? "text-white" : "text-gray-900"}`}
+        >
+          Internal Alerts
+        </h2>
+        <p
+          className={`text-xs mb-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+        >
+          Notify your team when activity happens.
+        </p>
         <div className="space-y-3">
           <label className="flex items-center justify-between gap-4 py-2 cursor-pointer">
             <span>
-              <span className={`block text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>New quote request received</span>
-              <span className={`block text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Alert staff when a client submits a request.</span>
+              <span
+                className={`block text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}
+              >
+                New quote request received
+              </span>
+              <span
+                className={`block text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              >
+                Alert staff when a client submits a request.
+              </span>
             </span>
             <span className="relative inline-flex shrink-0 items-center">
-              <input type="checkbox" checked={form.notifyOnNewQuoteRequest} onChange={(e) => set("notifyOnNewQuoteRequest", e.target.checked)} className="sr-only peer" />
-              <span className={`w-10 h-6 rounded-full peer-checked:bg-[#C3110C] transition-colors ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+              <input
+                type="checkbox"
+                checked={form.notifyOnNewQuoteRequest}
+                onChange={(e) =>
+                  set("notifyOnNewQuoteRequest", e.target.checked)
+                }
+                className="sr-only peer"
+              />
+              <span
+                className={`w-10 h-6 rounded-full peer-checked:bg-[#C3110C] transition-colors ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+              />
               <span className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
             </span>
           </label>
 
           <label className="flex items-center justify-between gap-4 py-2 cursor-pointer">
             <span>
-              <span className={`block text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>Purchase Order recorded</span>
-              <span className={`block text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Alert staff when an order is confirmed.</span>
+              <span
+                className={`block text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}
+              >
+                Purchase Order recorded
+              </span>
+              <span
+                className={`block text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              >
+                Alert staff when an order is confirmed.
+              </span>
             </span>
             <span className="relative inline-flex shrink-0 items-center">
-              <input type="checkbox" checked={form.notifyOnPurchaseOrder} onChange={(e) => set("notifyOnPurchaseOrder", e.target.checked)} className="sr-only peer" />
-              <span className={`w-10 h-6 rounded-full peer-checked:bg-[#C3110C] transition-colors ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`} />
+              <input
+                type="checkbox"
+                checked={form.notifyOnPurchaseOrder}
+                onChange={(e) => set("notifyOnPurchaseOrder", e.target.checked)}
+                className="sr-only peer"
+              />
+              <span
+                className={`w-10 h-6 rounded-full peer-checked:bg-[#C3110C] transition-colors ${isDark ? "bg-[#2A2A2A]" : "bg-gray-200"}`}
+              />
               <span className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
             </span>
           </label>
@@ -130,23 +266,62 @@ const NotificationSettings = () => {
 
       <div className={`${cardClasses} space-y-4`}>
         <div>
-          <h2 className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>Client Email Template</h2>
-          <p className={`text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Sent to the client along with the Proforma Invoice PDF.</p>
+          <h2
+            className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+          >
+            Client Email Template
+          </h2>
+          <p
+            className={`text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+          >
+            Sent to the client along with the Proforma Invoice PDF.
+          </p>
         </div>
         <div>
-          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-600"}`}>Subject line <span className="text-gray-400">— use {"{proformaNumber}"} as a placeholder</span></label>
-          <input value={form.proformaEmailSubject} onChange={(e) => set("proformaEmailSubject", e.target.value)} className={inputClasses} />
+          <label
+            className={`block text-xs font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-600"}`}
+          >
+            Subject line{" "}
+            <span className="text-gray-400">
+              — use {"{proformaNumber}"} as a placeholder
+            </span>
+          </label>
+          <input
+            value={form.proformaEmailSubject}
+            onChange={(e) => set("proformaEmailSubject", e.target.value)}
+            className={inputClasses}
+          />
         </div>
         <div>
-          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-600"}`}>Internal notification recipients</label>
-          <input value={form.internalNotifyEmails} onChange={(e) => set("internalNotifyEmails", e.target.value)} placeholder="sales@onasisltd.com, manager@onasisltd.com" className={inputClasses} />
-          <p className="text-xs text-gray-400 mt-1">Comma-separated email addresses.</p>
+          <label
+            className={`block text-xs font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-600"}`}
+          >
+            Internal notification recipients
+          </label>
+          <input
+            value={form.internalNotifyEmails}
+            onChange={(e) => set("internalNotifyEmails", e.target.value)}
+            placeholder="sales@onasisltd.com, manager@onasisltd.com"
+            className={inputClasses}
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            Comma-separated email addresses.
+          </p>
         </div>
       </div>
 
       <div className="flex items-center justify-end">
-        <button onClick={handleSave} disabled={!dirty || isSaving} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#C3110C] text-white hover:bg-[#a80e0a] transition-colors disabled:opacity-50`}>
-          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Changes
+        <button
+          onClick={handleSave}
+          disabled={!dirty || isSaving}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#C3110C] text-white hover:bg-[#a80e0a] transition-colors disabled:opacity-50`}
+        >
+          {isSaving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}{" "}
+          Save Changes
         </button>
       </div>
     </div>

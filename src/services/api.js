@@ -191,6 +191,42 @@ export const api = {
       return response.json();
     },
 
+    downloadProforma: async (token, id, format = "pdf") => {
+      const response = await fetch(
+        `${API_BASE}/quotes/${id}/proforma/download?format=${format}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      // ✅ Throw on HTTP errors so the caller can show the real message
+      if (!response.ok) {
+        let message = `Download failed (${response.status})`;
+        try {
+          const data = await response.json();
+          message = data?.message || data?.error || message;
+        } catch {
+          // response wasn't JSON — keep the status-based message
+        }
+        throw new Error(message);
+      }
+
+      // ✅ Guard against an empty body
+      const blob = await response.blob();
+      if (!blob || blob.size === 0) {
+        throw new Error("The server returned an empty file.");
+      }
+      return blob;
+    },
+
+    resendProforma: async (token, id) => {
+      const response = await fetch(`${API_BASE}/quotes/${id}/proforma/resend`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.json();
+    },
+
     updateStatus: async (token, id, status) => {
       const response = await fetch(`${API_BASE}/quotes/${id}/status`, {
         method: "PUT",
@@ -212,7 +248,21 @@ export const api = {
         },
         body: JSON.stringify(data),
       });
-      return response.json();
+
+      // ✅ Read ONCE — into a variable
+      const body = await response.json().catch(() => ({}));
+
+      // ✅ Branch on the already-read body
+      if (!response.ok || body.success === false) {
+        const err = new Error(
+          body.message || `Request failed (${response.status})`,
+        );
+        err.status = response.status;
+        err.body = body;
+        throw err;
+      }
+
+      return body;
     },
 
     recordPO: async (token, id, data) => {
@@ -412,13 +462,13 @@ export const api = {
     },
   },
 
-    // Newsletter endpoint
+  // Newsletter endpoint
   newsletter: {
     // Public: Subscribe
     subscribe: async (data) => {
       const response = await fetch(`${API_BASE}/newsletter/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       return response.json();
@@ -437,7 +487,7 @@ export const api = {
         `${API_BASE}/newsletter/subscribers?${queryString}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       return response.json();
     },
@@ -453,7 +503,7 @@ export const api = {
     // Dashboard: Delete subscriber
     deleteSubscriber: async (token, id) => {
       const response = await fetch(`${API_BASE}/newsletter/subscribers/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.json();
@@ -466,9 +516,41 @@ export const api = {
         `${API_BASE}/newsletter/export?${queryString}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       return response.blob();
+    },
+  },
+
+  notifications: {
+    list: async (token, params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      const r = await fetch(`${API_BASE}/notifications?${qs}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) throw new Error("Failed to load notifications");
+      return r.json();
+    },
+    unreadCount: async (token) => {
+      const r = await fetch(`${API_BASE}/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) throw new Error("Failed to load count");
+      return r.json();
+    },
+    markRead: async (token, id) => {
+      const r = await fetch(`${API_BASE}/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return r.json();
+    },
+    markAllRead: async (token) => {
+      const r = await fetch(`${API_BASE}/notifications/read-all`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return r.json();
     },
   },
 };

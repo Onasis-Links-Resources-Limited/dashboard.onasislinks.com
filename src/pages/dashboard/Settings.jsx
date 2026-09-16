@@ -57,10 +57,10 @@ const Settings = () => {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Tab navigation */}
-        <nav className={`lg:w-56 flex-shrink-0`}>
+        <nav className={`lg:w-56 shrink-0`}>
           <ul className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
             {TABS.map(({ to, label, icon: Icon }) => (
-              <li key={to} className="flex-shrink-0">
+              <li key={to} className="shrink-0">
                 <NavLink
                   to={to}
                   className={({ isActive }) =>
@@ -69,7 +69,7 @@ const Settings = () => {
                       isActive
                         ? "bg-[#E6501B]/10 text-[#E6501B]"
                         : isDark // ✅ Dark mode inactive state
-                          ? "text-gray-300 hover:bg-gray-800"
+                          ? "text-gray-300 hover:bg-[#212121]"
                           : "text-gray-600 hover:bg-gray-100",
                     )
                   }

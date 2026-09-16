@@ -18,7 +18,7 @@ export const formatPercentage = (value) => {
 export const formatStatus = (status) => {
   const statusMap = {
     pending: 'Pending',
-    approved: 'Approved',
+    accepted: 'Accepted',
     rejected: 'Rejected',
     completed: 'Completed',
     active: 'Active',
