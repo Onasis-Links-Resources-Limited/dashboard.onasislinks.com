@@ -55,7 +55,7 @@ const QuotePurchaseOrderPanel = ({ open, quote, onSubmit, onCancel }) => {
               Enter the Purchase Order reference the customer sent for quote{" "}
               <span className="text-[#E6501B]">{quote.quoteNumber}</span>
               . This confirms the order and moves it to
-              Approved.
+              Accepted.
             </p>
           </div>
           <div>

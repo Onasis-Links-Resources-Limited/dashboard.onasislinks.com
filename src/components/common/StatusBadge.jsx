@@ -21,8 +21,8 @@ const STATUS_CONFIG = {
     bg: "bg-yellow-100 dark:bg-yellow-900/30",
     text: "text-yellow-800 dark:text-yellow-300",
   },
-  approved: {
-    label: "Approved",
+  accepted: {
+    label: "Accepted",
     bg: "bg-green-100 dark:bg-green-900/30",
     text: "text-green-800 dark:text-green-300",
   },
@@ -33,8 +33,14 @@ const STATUS_CONFIG = {
   },
 };
 
+const DEFAULT_STATUS = {
+  label: "Unknown",
+  bg: "bg-gray-100 dark:bg-gray-800",
+  text: "text-gray-700 dark:text-gray-400",
+};
+
 const StatusBadge = ({ status, size = "md", className }) => {
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.suspended;
+  const config = STATUS_CONFIG[status] || DEFAULT_STATUS;
   const sizes = {
     sm: "text-xs px-2 py-0.5",
     md: "text-sm px-2.5 py-1",

@@ -18,7 +18,7 @@
 // Quote lifecycle:
 //   pending   -> client request just received from the website, unpriced
 //   quoted    -> staff priced the items and sent a Proforma Invoice
-//   approved  -> client issued a Purchase Order, order confirmed
+//   accepted  -> client issued a Purchase Order, order confirmed
 //   completed -> order delivered
 //   rejected  -> client declined the quote
 //   expired   -> quote validity window lapsed before a decision
@@ -26,7 +26,7 @@
 export const STATUSES = [
   "pending",
   "quoted",
-  "approved",
+  "accepted",
   "rejected",
   "completed",
   "expired",
@@ -299,7 +299,7 @@ const buildQuote = (index) => {
   }
 
   let purchaseOrder = null;
-  if (["approved", "completed"].includes(status)) {
+  if (["accepted", "completed"].includes(status)) {
     purchaseOrder = {
       poNumber: `PO-${idNum}-${date.getFullYear()}`,
       receivedDate: dateStr,
@@ -594,7 +594,7 @@ export const quoteAPI = {
 
   /**
    * Records the client's Purchase Order against a quoted request and moves
-   * it to `approved`, ready for delivery.
+   * it to `accepted`, ready for delivery.
    * @param {string} id
    * @param {{poNumber: string, poDate?: string}} payload
    * @returns {Promise<object>} updated quote
@@ -608,7 +608,7 @@ export const quoteAPI = {
       poNumber: payload.poNumber,
       receivedDate: payload.poDate || new Date().toISOString().slice(0, 10),
     };
-    quote.status = "approved";
+    quote.status = "accepted";
     quote.timeline.push({
       date: new Date().toISOString().slice(0, 16).replace("T", " "),
       action: `Purchase Order ${payload.poNumber} Received`,

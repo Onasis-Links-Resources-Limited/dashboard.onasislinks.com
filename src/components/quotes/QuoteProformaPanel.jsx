@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, FileText, Plus } from "lucide-react";
+import { X, FileText, Plus, AlertCircle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
-import { formatMoney } from "./ProformaUtils";
 
 const defaultValidUntil = () => {
   const d = new Date();
@@ -10,7 +9,12 @@ const defaultValidUntil = () => {
   return d.toISOString().slice(0, 10);
 };
 
-// Hardcoded standard terms staff can pick from
+const formatMoney = (amount) =>
+  new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount || 0);
+
 const TERMS_OPTIONS = [
   "100% payment before delivery",
   "Full payment 15 days after delivery",
@@ -21,6 +25,7 @@ const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   const { theme } = useTheme();
+
   const [prices, setPrices] = useState(() =>
     Object.fromEntries(
       (quote?.items || []).map((item) => [item.id, item.unitPrice || ""]),
@@ -30,8 +35,8 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   const [validUntil, setValidUntil] = useState(
     quote?.proforma?.validUntil || defaultValidUntil(),
   );
+  const [error, setError] = useState(null);
 
-  // Support multiple terms - store as array
   const [selectedTerms, setSelectedTerms] = useState(() => {
     if (!quote?.notes) return [];
     const notes = quote.notes;
@@ -39,7 +44,6 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
     const recognized = possibleTerms.filter((t) =>
       TERMS_OPTIONS.includes(t.trim()),
     );
-    // Filter out any default deposit note
     const filtered = recognized.filter(
       (t) => t !== "50% deposit required before order processing.",
     );
@@ -52,7 +56,6 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
     const customParts = possibleTerms.filter(
       (t) => !TERMS_OPTIONS.includes(t.trim()),
     );
-    // Filter out any default deposit note from custom notes too
     const filtered = customParts.filter(
       (t) => t.trim() !== "50% deposit required before order processing.",
     );
@@ -80,33 +83,26 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
 
   if (!open || !quote) return null;
 
-  const allPriced = items.every((item) => Number(prices[item.id]) > 0);
+  const hasItems = items.length > 0;
+  const allPriced = hasItems && items.every((item) => Number(prices[item.id]) > 0);
 
   const buildNotes = () => {
     const parts = [];
-    if (selectedTerms.length > 0) {
-      parts.push(...selectedTerms);
-    }
-    if (customNotes.trim()) {
-      parts.push(customNotes.trim());
-    }
+    if (selectedTerms.length > 0) parts.push(...selectedTerms);
+    if (customNotes.trim()) parts.push(customNotes.trim());
     return parts.join("\n");
   };
 
   const handleTermToggle = (term) => {
-    setSelectedTerms((prev) => {
-      if (prev.includes(term)) {
-        return prev.filter((t) => t !== term);
-      } else {
-        return [...prev, term];
-      }
-    });
+    setSelectedTerms((prev) =>
+      prev.includes(term) ? prev.filter((t) => t !== term) : [...prev, term],
+    );
   };
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    setError(null);
     try {
-      // Only send notes that were explicitly selected or entered
       const notes = buildNotes();
       await onGenerate({
         items: items.map((item) => ({
@@ -115,41 +111,32 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         })),
         discount: Number(discount) || 0,
         validUntil,
-        notes: notes, // This will be empty if nothing is selected
+        notes,
       });
+    } catch (err) {
+      setError(err?.message || "Failed to generate proforma invoice.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Helper function to parse specifications
   const parseSpecifications = (specs) => {
     if (!specs) return null;
-
-    // If it's already an object or array, return it
     if (typeof specs === "object") return specs;
-
-    // If it's a string, try to parse it as JSON
     if (typeof specs === "string") {
       try {
-        const parsed = JSON.parse(specs);
-        return parsed;
+        return JSON.parse(specs);
       } catch {
-        // If parsing fails, return as plain text
         return specs;
       }
     }
-
     return null;
   };
 
-  // Helper to render specifications
   const renderSpecifications = (specs) => {
     const parsed = parseSpecifications(specs);
-
     if (!parsed) return null;
 
-    // If it's an array, render each item
     if (Array.isArray(parsed)) {
       return (
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
@@ -163,7 +150,6 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
       );
     }
 
-    // If it's an object (not array), render key-value pairs
     if (typeof parsed === "object") {
       return (
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
@@ -177,7 +163,6 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
       );
     }
 
-    // If it's a string, display it directly
     return (
       <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
         {String(parsed)}
@@ -217,6 +202,22 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         </div>
 
         <div className="overflow-y-auto p-5 space-y-4">
+          {/* ✅ Empty-state guard */}
+          {!hasItems && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                  This quote has no items
+                </p>
+                <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                  A proforma invoice can't be generated. Close this panel and
+                  delete the quote instead.
+                </p>
+              </div>
+            </div>
+          )}
+
           <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
             Assign a unit price to each requested item. These prices will appear
             on the Proforma Invoice sent to the customer.
@@ -258,10 +259,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                         step="0.01"
                         value={prices[item.id]}
                         onChange={(e) =>
-                          setPrices((p) => ({
-                            ...p,
-                            [item.id]: e.target.value,
-                          }))
+                          setPrices((p) => ({ ...p, [item.id]: e.target.value }))
                         }
                         placeholder="0.00"
                         aria-label={`Unit price for ${item.name}`}
@@ -269,9 +267,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                       />
                     </td>
                     <td className="px-3 py-2 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                      {formatMoney(
-                        (Number(prices[item.id]) || 0) * item.quantity,
-                      )}
+                      {formatMoney((Number(prices[item.id]) || 0) * item.quantity)}
                     </td>
                   </tr>
                 ))}
@@ -311,13 +307,9 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
               Terms &amp; Notes
             </label>
 
-            {/* Terms checkboxes */}
             <div className="space-y-1.5 mb-2">
               {TERMS_OPTIONS.map((term) => (
-                <label
-                  key={term}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={term} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedTerms.includes(term)}
@@ -331,7 +323,6 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
               ))}
             </div>
 
-            {/* Custom notes toggle */}
             <button
               type="button"
               onClick={() => setShowCustomInput(!showCustomInput)}
@@ -351,6 +342,14 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
               />
             )}
           </div>
+
+          {/* ✅ Inline error, part of the flow */}
+          {error && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-800 dark:text-red-300">{error}</p>
+            </div>
+          )}
 
           <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-lg p-4 space-y-1.5 text-sm">
             <div className="flex justify-between text-gray-600 dark:text-gray-300">
@@ -375,7 +374,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
             </div>
           </div>
 
-          {!allPriced && (
+          {hasItems && !allPriced && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
               Every item needs a unit price greater than ₦0 before the Proforma
               Invoice can be sent.
@@ -393,7 +392,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={submitting || !allPriced}
+            disabled={submitting || !allPriced || !hasItems}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#C3110C] text-white hover:bg-[#a80e0a] transition-colors disabled:opacity-50"
           >
             {submitting && (

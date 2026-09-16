@@ -388,7 +388,6 @@ export const downloadProformaPDF = async (quote) => {
     ["Tax ID:", COMPANY.taxId],
   ];
 
-
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   const piValue = String(metaItems[0][1]);

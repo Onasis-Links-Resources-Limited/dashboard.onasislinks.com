@@ -10,7 +10,7 @@ export const api = axios.create({
   },
 });
 
-// Request interceptor - add token
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
