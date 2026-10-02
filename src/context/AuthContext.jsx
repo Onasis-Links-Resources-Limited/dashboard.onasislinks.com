@@ -14,64 +14,76 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  const [token, setToken] = useState(() => {
+    const storedToken = localStorage.getItem("token");
+    if (!storedToken || storedToken === "null" || storedToken === "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      return null;
+    }
+    return storedToken;
+  });
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem("token")));
+  const [loading, setLoading] = useState(() => Boolean(token));
   const [error, setError] = useState(null);
 
   // Load user on mount if token exists
   useEffect(() => {
-    if (!token) {
+    // Clean up any stale "null"/"undefined" values from a previous bug
+    const storedToken = localStorage.getItem("token");
+    if (!storedToken || storedToken === "null" || storedToken === "undefined") {
       return;
     }
 
+    // If we have a token, verify it with the backend
     const loadUser = async () => {
       try {
-        const response = await api.auth.getProfile(token);
+        const response = await api.auth.getProfile(storedToken);
+
         if (response.success) {
           setUser(response.data);
         } else {
+          // Server explicitly says the token is bad → clean up
+          console.warn("Profile load failed:", response.message);
           setUser(null);
           setToken(null);
           localStorage.removeItem("token");
           localStorage.removeItem("user");
         }
       } catch (error) {
-        console.error("Failed to load user:", error);
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        // ✅ Network error ≠ invalid token. DON'T wipe on network errors.
+        console.error("Failed to load user (network):", error);
+        // keep the token, just don't set user
       } finally {
         setLoading(false);
       }
     };
 
     loadUser();
-  }, [token]);
+  }, []); // ✅ empty deps — run once on mount, not on every token change
 
   const login = async (email, password) => {
-    try {
-      setError(null);
-      const response = await api.auth.staffLogin(email, password);
+  try {
+    setError(null);
+    const response = await api.auth.staffLogin(email, password);
 
-      if (response.success) {
-        const { user, token } = response.data;
-        setUser(user);
-        setToken(token);
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-        return { success: true };
-      } else {
-        setError(response.message || "Login failed");
-        return { success: false, error: response.message };
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setError("Network error. Please try again.");
-      return { success: false, error: "Network error" };
+    if (response.success && response.data?.token) {
+      const { user, token } = response.data;
+      setUser(user);
+      setToken(token);
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      return { success: true };
+    } else {
+      setError(response.message || "Login failed");
+      return { success: false, error: response.message };
     }
-  };
+  } catch (error) {
+    console.error("Login error:", error);
+    setError("Network error. Please try again.");
+    return { success: false, error: "Network error" };
+  }
+};
 
   const logout = async () => {
     try {
