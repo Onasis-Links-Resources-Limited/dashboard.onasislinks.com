@@ -4,6 +4,7 @@ import { X, Plus, Trash2, Loader2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import api from "../../services/api";
+import { usePersistedState } from "../../hooks/usePersistedState";
 
 /**
  * Dialog for creating a new manual quote from email requests.
@@ -19,7 +20,7 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productsError, setProductsError] = useState(null);
 
-  const [customerData, setCustomerData] = useState({
+  const [customerData, setCustomerData, clearCustomerData] = usePersistedState("quote-draft-customer",{
     name: "",
     email: "",
     phone: "",
@@ -27,7 +28,7 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
     address: "",
   });
 
-  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectedProducts, setSelectedProducts, clearSelectedProducts] = usePersistedState("quote-draft-products", []);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -149,6 +150,8 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
       setSelectedProducts([]);
 
       toast.success("Quote created successfully!");
+      clearCustomerData();
+      clearSelectedProducts();
       onQuoteCreated(newQuote);
       onClose();
     } catch (err) {
