@@ -3,8 +3,18 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../services/api";
 import toast from "react-hot-toast";
-import { Package, Upload, Loader2, ArrowLeft, Plus, Trash2, FileText, X } from "lucide-react";
+import {
+  Package,
+  Upload,
+  Loader2,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  FileText,
+  X,
+} from "lucide-react";
 import { useDashboard } from "../../context/DashboardContext";
+import { usePersistedState } from "../../hooks/usePersistedState";
 
 const ProductForm = () => {
   const { id } = useParams();
@@ -16,15 +26,39 @@ const ProductForm = () => {
   const isEditMode = !!id;
   const token = localStorage.getItem("token");
 
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    category_id: "",
-    sku: "",
-    stock_quantity: 0,
-    status: "active",
-  });
-  const [specs, setSpecs] = useState([{ key: "", value: "" }]);
+  const draftKey = isEditMode ? `product-draft-${id}` : "product-draft-new";
+
+  const [formData, setFormData, clearFormData] = usePersistedState(
+    `${draftKey}-form`,
+    {
+      name: "",
+      description: "",
+      category_id: "",
+      sku: "",
+      stock_quantity: 0,
+      status: "active",
+    },
+  );
+  const [specs, setSpecs, clearSpecs] = usePersistedState(`${draftKey}-specs`, [
+    { key: "", value: "" },
+  ]);
+
+  // ✅ Defensive guards — ensure shape is always valid
+  const safeFormData =
+    formData && typeof formData === "object"
+      ? formData
+      : {
+          name: "",
+          description: "",
+          category_id: "",
+          sku: "",
+          stock_quantity: 0,
+          status: "active",
+        };
+
+  const safeSpecs =
+    Array.isArray(specs) && specs.length > 0 ? specs : [{ key: "", value: "" }];
+
   const [datasheets, setDatasheets] = useState([]);
   const [newDatasheetFiles, setNewDatasheetFiles] = useState([]);
   const [imageFile, setImageFile] = useState(null);
@@ -32,6 +66,8 @@ const ProductForm = () => {
   const [loading, setLoading] = useState(isEditMode);
   const [categories, setCategories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingDatasheet, setIsDraggingDatasheet] = useState(false);
   const imageInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -64,14 +100,20 @@ const ProductForm = () => {
               status: response.data.status,
             });
             setImagePreview(response.data.image_url);
-            
+
             // ✅ Load Specifications
-            if (response.data.specifications && response.data.specifications.length > 0) {
+            if (
+              response.data.specifications &&
+              response.data.specifications.length > 0
+            ) {
               setSpecs(response.data.specifications);
             }
-            
+
             // ✅ Load Datasheets
-            if (response.data.datasheets && response.data.datasheets.length > 0) {
+            if (
+              response.data.datasheets &&
+              response.data.datasheets.length > 0
+            ) {
               setDatasheets(response.data.datasheets);
             }
           }
@@ -84,6 +126,87 @@ const ProductForm = () => {
       loadProduct();
     }
   }, [id, isEditMode]);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only reset if we're leaving the drop zone entirely (not a child)
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+
+    // Validate type
+    const validTypes = ["image/png", "image/jpeg", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please drop a PNG, JPEG, or WebP image.");
+      return;
+    }
+
+    // Validate size (e.g. 5 MB)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      toast.error("Image is too large. Maximum size is 5 MB.");
+      return;
+    }
+
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleDatasheetDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingDatasheet(true);
+  };
+
+  const handleDatasheetDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    setIsDraggingDatasheet(false);
+  };
+
+  const handleDatasheetDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingDatasheet(false);
+
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (files.length === 0) return;
+
+    const validExtensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx"];
+    const accepted = files.filter((f) => {
+      const ext = "." + f.name.split(".").pop().toLowerCase();
+      return validExtensions.includes(ext);
+    });
+
+    if (accepted.length === 0) {
+      toast.error("Please drop PDF, DOC, or XLS files.");
+      return;
+    }
+
+    if (accepted.length < files.length) {
+      toast("Some files were skipped (invalid format).", { icon: "⚠️" });
+    }
+
+    setNewDatasheetFiles((prev) => [...prev, ...accepted]);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -130,26 +253,37 @@ const ProductForm = () => {
     setDatasheets(updated);
   };
 
+  const handleBack = () => {
+    if (window.confirm("Discard draft? Your progress will be lost.")) {
+      clearFormData();
+      clearSpecs();
+      navigate("/dashboard/products");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formDataObj = new FormData();
-    formDataObj.append("name", formData.name);
-    formDataObj.append("description", formData.description);
-    formDataObj.append("category_id", formData.category_id);
-    formDataObj.append("sku", formData.sku);
-    formDataObj.append("stock_quantity", formData.stock_quantity);
-    formDataObj.append("status", formData.status);
-    
+    formDataObj.append("name", safeFormData.name);
+    formDataObj.append("description", safeFormData.description);
+    formDataObj.append("category_id", safeFormData.category_id);
+    formDataObj.append("sku", safeFormData.sku);
+    formDataObj.append("stock_quantity", safeFormData.stock_quantity);
+    formDataObj.append("status", safeFormData.status);
+
     // ✅ Send Specifications as JSON string
-    formDataObj.append("specifications", JSON.stringify(specs.filter(s => s.key && s.value)));
-    
+    formDataObj.append(
+      "specifications",
+      JSON.stringify(safeSpecs.filter((s) => s.key && s.value)),
+    );
+
     // ✅ Send Existing Datasheets as JSON string (if any)
     if (datasheets.length > 0) {
       formDataObj.append("datasheets", JSON.stringify(datasheets));
     }
-    
+
     // ✅ Send New Datasheet Files
     newDatasheetFiles.forEach((file) => {
       formDataObj.append(`datasheet_files`, file);
@@ -166,6 +300,8 @@ const ProductForm = () => {
       }
 
       if (success) {
+        clearFormData();
+        clearSpecs();
         navigate("/dashboard/products");
       }
     } catch {
@@ -187,7 +323,7 @@ const ProductForm = () => {
       className={`relative z-10 min-h-screen p-6 transition-colors duration-300`}
     >
       <button
-        onClick={() => navigate("/dashboard/products")}
+        onClick={handleBack}
         className={`mb-6 flex items-center gap-2 text-sm font-medium transition hover:text-[#C3110C] ${isDark ? "text-gray-400" : "text-gray-600"}`}
       >
         <ArrowLeft className="w-4 h-4" /> Back to Products
@@ -231,7 +367,7 @@ const ProductForm = () => {
                 <input
                   type="text"
                   name="name"
-                  value={formData.name}
+                  value={safeFormData.name}
                   onChange={handleChange}
                   className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
                 />
@@ -244,7 +380,7 @@ const ProductForm = () => {
                 </label>
                 <textarea
                   name="description"
-                  value={formData.description}
+                  value={safeFormData.description}
                   onChange={handleChange}
                   rows="3"
                   className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
@@ -258,7 +394,7 @@ const ProductForm = () => {
                 </label>
                 <select
                   name="category_id"
-                  value={formData.category_id}
+                  value={safeFormData.category_id}
                   onChange={handleChange}
                   className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
                 >
@@ -270,8 +406,8 @@ const ProductForm = () => {
                   ))}
                 </select>
 
-                {formData.category_id &&
-                  categories.find((cat) => cat.id === formData.category_id)
+                {safeFormData.category_id &&
+                  categories.find((cat) => cat.id === safeFormData.category_id)
                     ?.is_active === false && (
                     <div
                       className={`mt-2 p-3 rounded-lg text-xs border ${isDark ? "bg-yellow-900/20 text-yellow-200 border-yellow-700/50" : "bg-yellow-50 text-yellow-800 border-yellow-200"}`}
@@ -291,7 +427,7 @@ const ProductForm = () => {
                 <input
                   type="text"
                   name="sku"
-                  value={formData.sku}
+                  value={safeFormData.sku}
                   onChange={handleChange}
                   className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
                 />
@@ -306,7 +442,7 @@ const ProductForm = () => {
                   type="number"
                   name="stock_quantity"
                   min="0"
-                  value={formData.stock_quantity}
+                  value={safeFormData.stock_quantity}
                   onChange={handleChange}
                   className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
                 />
@@ -319,7 +455,7 @@ const ProductForm = () => {
                 </label>
                 <select
                   name="status"
-                  value={formData.status}
+                  value={safeFormData.status}
                   onChange={handleChange}
                   className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
                 >
@@ -346,14 +482,18 @@ const ProductForm = () => {
                   type="text"
                   placeholder="Spec Name (e.g., Speed)"
                   value={spec.key}
-                  onChange={(e) => handleSpecChange(index, "key", e.target.value)}
+                  onChange={(e) =>
+                    handleSpecChange(index, "key", e.target.value)
+                  }
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
                 />
                 <input
                   type="text"
                   placeholder="Value (e.g., 300Mbps)"
                   value={spec.value}
-                  onChange={(e) => handleSpecChange(index, "value", e.target.value)}
+                  onChange={(e) =>
+                    handleSpecChange(index, "value", e.target.value)
+                  }
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
                 />
                 <button
@@ -383,7 +523,7 @@ const ProductForm = () => {
             >
               Datasheets & Downloads
             </h2>
-            
+
             {/* Existing Datasheets */}
             {datasheets.length > 0 && (
               <div className="mb-4 space-y-2">
@@ -392,7 +532,9 @@ const ProductForm = () => {
                     key={index}
                     className={`flex items-center justify-between p-3 rounded-lg border ${isDark ? "border-[#2A2A2A] bg-[#242424]" : "border-gray-200 bg-gray-50"}`}
                   >
-                    <span className={`text-sm flex items-center gap-2 truncate ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                    <span
+                      className={`text-sm flex items-center gap-2 truncate ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                    >
                       <FileText className="w-4 h-4 flex-shrink-0" /> {file.name}
                     </span>
                     <button
@@ -419,13 +561,27 @@ const ProductForm = () => {
             />
             <label
               htmlFor="datasheet-upload"
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition hover:border-[#C3110C] cursor-pointer block ${isDark ? "border-[#2A2A2A] hover:border-[#C3110C]" : "border-gray-300 hover:border-[#C3110C]"}`}
+              onDragOver={handleDatasheetDragOver}
+              onDragEnter={handleDatasheetDragOver}
+              onDragLeave={handleDatasheetDragLeave}
+              onDrop={handleDatasheetDrop}
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition cursor-pointer block ${
+                isDraggingDatasheet
+                  ? "border-[#C3110C] bg-[#C3110C]/5"
+                  : isDark
+                    ? "border-[#2A2A2A] hover:border-[#C3110C]"
+                    : "border-gray-300 hover:border-[#C3110C]"
+              }`}
             >
               <div className="mb-2 text-gray-400 mx-auto w-fit">
                 <Upload size={32} />
               </div>
-              <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-                Click to upload PDF, DOC, or XLS files
+              <p
+                className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              >
+                {isDraggingDatasheet
+                  ? "Drop files here"
+                  : "Click to upload or drag & drop PDF, DOC, or XLS files"}
               </p>
             </label>
 
@@ -437,7 +593,9 @@ const ProductForm = () => {
                     key={index}
                     className={`flex items-center justify-between p-3 rounded-lg border ${isDark ? "border-[#2A2A2A] bg-[#242424]" : "border-gray-200 bg-gray-50"}`}
                   >
-                    <span className={`text-sm flex items-center gap-2 truncate ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                    <span
+                      className={`text-sm flex items-center gap-2 truncate ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                    >
                       <FileText className="w-4 h-4 flex-shrink-0" /> {file.name}
                     </span>
                     <button
@@ -474,23 +632,54 @@ const ProductForm = () => {
             />
             <label
               htmlFor="product-image"
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition hover:border-[#C3110C] cursor-pointer block ${isDark ? "border-[#2A2A2A] hover:border-[#C3110C]" : "border-gray-300 hover:border-[#C3110C]"}`}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition hover:border-[#C3110C] cursor-pointer block ${isDragging ? "border-[#C3110C] bg-[#C3110C]/5" : isDark ? "border-[#2A2A2A] hover:border-[#C3110C]" : "border-gray-300 hover:border-[#C3110C]"}`}
             >
               {imagePreview ? (
-                <img
-                  src={imagePreview}
-                  alt="Product Preview"
-                  className="max-h-40 mx-auto object-contain rounded-md mb-2"
-                />
+                <div className="space-y-2">
+                  <img
+                    src={imagePreview}
+                    alt="Product Preview"
+                    className="max-h-40 mx-auto object-contain rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setImageFile(null);
+                      setImagePreview(null);
+                      if (imageInputRef.current)
+                        imageInputRef.current.value = "";
+                    }}
+                    className="text-xs text-red-500 hover:text-red-600 underline"
+                  >
+                    Remove image
+                  </button>
+                </div>
               ) : (
                 <>
-                  <div className="mb-2 text-gray-400 mx-auto w-fit">
+                  <div
+                    className={`mb-2 mx-auto w-fit transition-colors ${
+                      isDragging ? "text-[#C3110C]" : "text-gray-400"
+                    }`}
+                  >
                     <Package size={40} />
                   </div>
                   <p
                     className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
                   >
-                    Click to upload
+                    {isDragging
+                      ? "Drop image here"
+                      : "Click to upload or drag & drop"}
+                  </p>
+                  <p
+                    className={`text-xs mt-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                  >
+                    PNG, JPG, or WebP · Max 5 MB
                   </p>
                 </>
               )}
