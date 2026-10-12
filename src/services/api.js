@@ -392,6 +392,28 @@ export const api = {
       return response.json();
     },
 
+    bulkCreate: async (token, products) => {
+      const response = await fetch(`${API_BASE}/products/bulk`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ products }),
+      });
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || body.success === false) {
+        const err = new Error(
+          body.message || `Bulk upload failed (${response.status})`,
+        );
+        err.status = response.status;
+        err.body = body;
+        throw err;
+      }
+      return body;
+    },
+
     update: async (token, id, formData) => {
       const response = await fetch(`${API_BASE}/products/${id}`, {
         method: "PUT",

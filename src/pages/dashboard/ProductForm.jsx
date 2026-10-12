@@ -15,18 +15,20 @@ import {
 } from "lucide-react";
 import { useDashboard } from "../../context/DashboardContext";
 import { usePersistedState } from "../../hooks/usePersistedState";
+import BulkProductUpload from "./BulkProductUpload";
 
 const ProductForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const { createProduct, updateProduct } = useDashboard();
+  const { createProduct, updateProduct, refetchProducts } = useDashboard();
 
   const isEditMode = !!id;
   const token = localStorage.getItem("token");
 
   const draftKey = isEditMode ? `product-draft-${id}` : "product-draft-new";
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   const [formData, setFormData, clearFormData] = usePersistedState(
     `${draftKey}-form`,
@@ -335,14 +337,23 @@ const ProductForm = () => {
         >
           {isEditMode ? "Edit Product" : "Add New Product"}
         </h1>
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className="cursor-pointer rounded-lg bg-[#C3110C] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#740A03] flex items-center gap-2"
-        >
-          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />} Save
-          Changes
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowBulkUpload(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-[#2A2A2A] text-sm font-medium cursor-pointer"
+          >
+            <Upload className="w-4 h-4" />
+            Bulk Upload
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="cursor-pointer rounded-lg bg-[#C3110C] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#740A03] flex items-center gap-2"
+          >
+            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />} Save
+            Changes
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -687,6 +698,18 @@ const ProductForm = () => {
           </div>
         </div>
       </div>
+
+      <BulkProductUpload
+        open={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onSuccess={async () => {
+          await refetchProducts();
+          clearFormData();
+          clearSpecs();
+          setShowBulkUpload(false);
+          navigate("/dashboard/products");
+        }}
+      />
     </div>
   );
 };
