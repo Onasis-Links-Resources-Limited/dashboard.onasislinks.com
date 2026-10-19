@@ -26,6 +26,16 @@ const STATUS_CONFIG = {
     bg: "bg-green-100 dark:bg-green-900/30",
     text: "text-green-800 dark:text-green-300",
   },
+  pending_email_approval: {
+    label: "Pending Email Approval",
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    text: "text-blue-800 dark:text-blue-300",
+  },
+  pending_pac_approval: {
+    label: "Pending PAC Approval",
+    bg: "bg-purple-100 dark:bg-purple-900/30",
+    text: "text-purple-800 dark:text-purple-300",
+  },
   rejected: {
     label: "Rejected",
     bg: "bg-red-100 dark:bg-red-900/30",

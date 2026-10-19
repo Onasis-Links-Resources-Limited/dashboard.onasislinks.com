@@ -5,6 +5,8 @@ const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "quoted", label: "Quoted" },
   { value: "accepted", label: "Accepted" },
+  { value: "pending_email_approval", label: "Pending Email Approval" },
+  { value: "pending_pac_approval", label: "Pending PAC Approval" },
   { value: "rejected", label: "Rejected" },
   { value: "completed", label: "Completed" },
   { value: "expired", label: "Expired" },
@@ -120,7 +122,7 @@ const QuoteFilters = ({ filters, onChange }) => {
             }
             aria-label={`Sort order: ${filters.sortOrder === "asc" ? "ascending" : "descending"}`}
             title={filters.sortOrder === "asc" ? "Ascending" : "Descending"}
-            className="flex items-center justify-center p-2 border border-gray-200 dark:border-[#2A2A2A] rounded-lg bg-white dark:bg-[#1A1A1A] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+            className="flex items-center justify-center p-2 border border-gray-200 dark:border-[#2A2A2A] rounded-lg bg-white dark:bg-[#1A1A1A] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
           >
             <ArrowUpDown
               className={`w-4 h-4 transition-transform ${filters.sortOrder === "asc" ? "rotate-180" : ""}`}

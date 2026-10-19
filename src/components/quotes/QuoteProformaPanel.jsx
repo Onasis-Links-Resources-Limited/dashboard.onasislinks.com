@@ -63,6 +63,9 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   });
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [toEmails, setToEmails] = useState(quote?.customer?.email || "");
+  const [ccEmails, setCcEmails] = useState("");
+  const [bccEmails, setBccEmails] = useState("");
 
   const items = useMemo(() => quote?.items || [], [quote]);
 
@@ -84,7 +87,8 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   if (!open || !quote) return null;
 
   const hasItems = items.length > 0;
-  const allPriced = hasItems && items.every((item) => Number(prices[item.id]) > 0);
+  const allPriced =
+    hasItems && items.every((item) => Number(prices[item.id]) > 0);
 
   const buildNotes = () => {
     const parts = [];
@@ -99,11 +103,33 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
     );
   };
 
-  const handleSubmit = async () => {
+  const parseEmails = (value) =>
+    value
+      .split(/[;,\n]/)
+      .map((email) => email.trim())
+      .filter(Boolean);
+
+  const handleSubmit = async (sendEmail) => {
     setSubmitting(true);
     setError(null);
     try {
       const notes = buildNotes();
+      const to = parseEmails(toEmails);
+      const cc = parseEmails(ccEmails);
+      const bcc = parseEmails(bccEmails);
+      if (
+        sendEmail &&
+        (!to.length ||
+          to.some((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ||
+          [...cc, ...bcc].some(
+            (email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+          ))
+      ) {
+        setError(
+          "Enter valid recipient email addresses. Separate multiple addresses with commas.",
+        );
+        return;
+      }
       await onGenerate({
         items: items.map((item) => ({
           id: item.id,
@@ -112,6 +138,12 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         discount: Number(discount) || 0,
         validUntil,
         notes,
+        sendEmail,
+        send_email: sendEmail,
+        to,
+        cc,
+        bcc,
+        recipients: { to, cc, bcc },
       });
     } catch (err) {
       setError(err?.message || "Failed to generate proforma invoice.");
@@ -219,8 +251,8 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
           )}
 
           <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
-            Assign a unit price to each requested item. These prices will appear
-            on the Proforma Invoice sent to the customer.
+            Assign a unit price to each requested item. Choose whether to only
+            generate the invoice or also email it to the recipients below.
           </p>
 
           <div className="border border-gray-200 dark:border-[#2A2A2A] rounded-lg overflow-hidden">
@@ -259,7 +291,10 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                         step="0.01"
                         value={prices[item.id]}
                         onChange={(e) =>
-                          setPrices((p) => ({ ...p, [item.id]: e.target.value }))
+                          setPrices((p) => ({
+                            ...p,
+                            [item.id]: e.target.value,
+                          }))
                         }
                         placeholder="0.00"
                         aria-label={`Unit price for ${item.name}`}
@@ -267,7 +302,9 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                       />
                     </td>
                     <td className="px-3 py-2 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                      {formatMoney((Number(prices[item.id]) || 0) * item.quantity)}
+                      {formatMoney(
+                        (Number(prices[item.id]) || 0) * item.quantity,
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -303,13 +340,61 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
           </div>
 
           <div>
+            <h3 className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">
+              Email Recipients
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 sm:col-span-2">
+                To{" "}
+                <span className="font-normal text-gray-400">
+                  (multiple addresses separated by commas)
+                </span>
+                <input
+                  type="text"
+                  value={toEmails}
+                  onChange={(event) => setToEmails(event.target.value)}
+                  placeholder="client@example.com, accounts@example.com"
+                  className="mt-1 w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] outline-none"
+                />
+              </label>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                CC
+                <input
+                  type="text"
+                  value={ccEmails}
+                  onChange={(event) => setCcEmails(event.target.value)}
+                  placeholder="colleague@example.com"
+                  className="mt-1 w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] outline-none"
+                />
+              </label>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                BCC
+                <input
+                  type="text"
+                  value={bccEmails}
+                  onChange={(event) => setBccEmails(event.target.value)}
+                  placeholder="archive@example.com"
+                  className="mt-1 w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] outline-none"
+                />
+              </label>
+            </div>
+            <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+              Recipient fields are used only when you choose Generate &amp;
+              Send.
+            </p>
+          </div>
+
+          <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
               Terms &amp; Notes
             </label>
 
             <div className="space-y-1.5 mb-2">
               {TERMS_OPTIONS.map((term) => (
-                <label key={term} className="flex items-center gap-2 cursor-pointer">
+                <label
+                  key={term}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     checked={selectedTerms.includes(term)}
@@ -377,7 +462,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
           {hasItems && !allPriced && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
               Every item needs a unit price greater than ₦0 before the Proforma
-              Invoice can be sent.
+              Invoice can be generated.
             </p>
           )}
         </div>
@@ -391,8 +476,20 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
             Cancel
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={() => handleSubmit(false)}
             disabled={submitting || !allPriced || !hasItems}
+            type="button"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#212121] transition-colors disabled:opacity-50"
+          >
+            {submitting && (
+              <span className="w-3.5 h-3.5 border-2 border-gray-300 border-t-[#C3110C] rounded-full animate-spin" />
+            )}
+            Generate Only
+          </button>
+          <button
+            onClick={() => handleSubmit(true)}
+            disabled={submitting || !allPriced || !hasItems}
+            type="button"
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#C3110C] text-white hover:bg-[#a80e0a] transition-colors disabled:opacity-50"
           >
             {submitting && (
