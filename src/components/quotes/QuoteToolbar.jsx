@@ -1,4 +1,12 @@
-import { Download, RefreshCw, Trash2, Plus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Download,
+  RefreshCw,
+  Trash2,
+  Plus,
+  ChevronDown,
+  ClipboardList,
+} from "lucide-react";
 import { cn } from "../../libs/utils";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -8,6 +16,7 @@ import { useTheme } from "../../context/ThemeContext";
  */
 const QuoteToolbar = ({
   onAddQuote,
+  onRecordPO,
   onExport,
   onRefresh,
   onBulkDelete,
@@ -17,16 +26,66 @@ const QuoteToolbar = ({
 }) => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!createMenuOpen) return;
+    const handler = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setCreateMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [createMenuOpen]);
+
+  useEffect(() => {
+  const onKey = (event) => {
+    if (event.key === "Escape") setCreateMenuOpen(false);
+  };
+  document.addEventListener("keydown", onKey);
+  return () => document.removeEventListener("keydown", onKey);
+}, []);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button
-        onClick={onAddQuote}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer"
-      >
-        <Plus className="w-4 h-4" />
-        Add Quote
-      </button>
+      <div className="relative" ref={menuRef}>
+        <button
+          onClick={() => setCreateMenuOpen((open) => !open)}
+          aria-expanded={createMenuOpen}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          Add to Quote
+          <ChevronDown
+            className={`w-3.5 h-3.5 transition-transform ${createMenuOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        {createMenuOpen && (
+          <div className="absolute left-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-[#2A2A2A] dark:bg-[#1A1A1A]">
+            <button
+              onClick={() => {
+                setCreateMenuOpen(false);
+                onAddQuote?.();
+              }}
+              className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-[#212121]"
+            >
+              <Plus className="h-4 w-4 text-blue-600" /> Add Quote
+            </button>
+            <button
+              onClick={() => {
+                setCreateMenuOpen(false);
+                onRecordPO?.();
+              }}
+              className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-[#212121]"
+            >
+              <ClipboardList className="h-4 w-4 text-[#C3110C]" /> Record PO
+              Number
+            </button>
+          </div>
+        )}
+      </div>
       <button
         onClick={onExport}
         disabled={exporting}

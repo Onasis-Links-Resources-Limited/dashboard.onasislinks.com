@@ -191,6 +191,26 @@ export const api = {
       return response.json();
     },
 
+    registerPO: async (token, data) => {
+      const response = await fetch(`${API_BASE}/quotes/register-po`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || body.success === false) {
+        const error = new Error(
+          body.message || `Request failed (${response.status})`,
+        );
+        error.body = body;
+        throw error;
+      }
+      return body;
+    },
+
     downloadProforma: async (token, id, format = "pdf") => {
       const response = await fetch(
         `${API_BASE}/quotes/${id}/proforma/download?format=${format}`,
@@ -227,14 +247,14 @@ export const api = {
       return response.json();
     },
 
-    updateStatus: async (token, id, status) => {
+    updateStatus: async (token, id, status, extra = {}) => {
       const response = await fetch(`${API_BASE}/quotes/${id}/status`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...extra }),
       });
       return response.json();
     },

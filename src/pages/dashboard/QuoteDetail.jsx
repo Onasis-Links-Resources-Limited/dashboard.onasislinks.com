@@ -7,6 +7,7 @@ import {
   Mail,
   CheckCircle,
   AlertCircle,
+  Truck,
 } from "lucide-react";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
@@ -19,6 +20,7 @@ import QuoteActions from "../../components/quotes/QuoteActions";
 import QuoteProformaPanel from "../../components/quotes/QuoteProformaPanel";
 import QuotePurchaseOrderPanel from "../../components/quotes/QuotePurchaseOrderPanel";
 import QuoteDownloadMenu from "../../components/quotes/QuoteDownloadMenu";
+import { downloadWaybillPDF } from "../../components/quotes/WaybillUtils";
 import StatusBadge from "../../components/common/StatusBadge";
 import EmptyState from "../../components/common/EmptyState";
 import { formatDate } from "../../libs/utils";
@@ -36,6 +38,7 @@ const QuoteDetail = () => {
   const [, setBusy] = useState(false);
   const [isProformaOpen, setIsProformaOpen] = useState(false);
   const [isRecordPOOpen, setIsRecordPOOpen] = useState(false);
+  const [generatingWaybill, setGeneratingWaybill] = useState(false);
   const [resending, setResending] = useState(false);
 
   // ✅ Derived AFTER quote is declared
@@ -100,10 +103,26 @@ const QuoteDetail = () => {
   const handleStatusChange = async (targetQuote, status) => {
     setBusy(true);
     try {
-      const result = await api.quotes.updateStatus(token, targetQuote.id, status);
+      const result = await api.quotes.updateStatus(
+        token,
+        targetQuote.id,
+        status,
+      );
       const updated = result.data || result;
       setQuote(updated);
-      toast.success(`Quote ${status} successfully.`);
+      const statusLabel =
+        {
+          pending: "Pending",
+          quoted: "Quoted",
+          accepted: "Accepted",
+          rejected: "Rejected",
+          completed: "Completed",
+          expired: "Expired",
+          pending_email_approval: "Pending Email Approval",
+          pending_pac_approval: "Pending PAC Approval",
+        }[status] || status.replaceAll("_", " ");
+
+      toast.success(`Status updated to ${statusLabel}.`);
     } catch (err) {
       toast.error(err?.message || "Failed to update quote status.");
     } finally {
@@ -115,7 +134,9 @@ const QuoteDetail = () => {
     setBusy(true);
     try {
       await api.quotes.delete(token, targetQuote.id);
-      toast.success(`Quote ${targetQuote.quoteNumber || targetQuote.id} deleted successfully.`);
+      toast.success(
+        `Quote ${targetQuote.quoteNumber || targetQuote.id} deleted successfully.`,
+      );
       navigate("/dashboard/quotes");
     } catch (err) {
       toast.error(err?.message || "Failed to delete quote.");
@@ -128,14 +149,16 @@ const QuoteDetail = () => {
     setBusy(true);
     try {
       const result = await api.quotes.generateProforma(token, id, payload);
-      const updatedQuote = result.data?.quote || result.data;
+      const updatedQuote = result.data?.quote || result.data || result.quote;
 
       if (updatedQuote) setQuote(updatedQuote);
       setIsProformaOpen(false);
 
-      if (result.data?.email_sent === false) {
+      if (payload.sendEmail === false) {
+        toast.success("Proforma Invoice generated. It was not sent.");
+      } else if ((result.data?.email_sent ?? result.email_sent) === false) {
         toast.error(
-          `Proforma generated, but email failed to send. ${result.data?.email_error || ""}`,
+          `Proforma generated, but email failed to send. ${result.data?.email_error || result.email_error || ""}`,
           { duration: 8000 },
         );
       } else {
@@ -143,7 +166,9 @@ const QuoteDetail = () => {
       }
     } catch (err) {
       const msg =
-        err?.message || err?.body?.message || "Failed to generate Proforma Invoice.";
+        err?.message ||
+        err?.body?.message ||
+        "Failed to generate Proforma Invoice.";
       toast.error(msg, { duration: 6000 });
       // ✅ Re-throw so QuoteProformaPanel can show the inline error too
       throw err;
@@ -164,6 +189,18 @@ const QuoteDetail = () => {
       toast.error(err?.message || "Failed to record Purchase Order.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleGenerateWaybill = async () => {
+    setGeneratingWaybill(true);
+    try {
+      await downloadWaybillPDF(quote);
+      toast.success("Waybill generated and downloaded. It was not sent.");
+    } catch (err) {
+      toast.error(err?.message || "Failed to generate waybill.");
+    } finally {
+      setGeneratingWaybill(false);
     }
   };
 
@@ -215,7 +252,9 @@ const QuoteDetail = () => {
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-300">
               Review and manage quote{" "}
-              <span className="font-bold text-[#E6501B]">{quote.quoteNumber}</span>{" "}
+              <span className="font-bold text-[#E6501B]">
+                {quote.quoteNumber}
+              </span>{" "}
               for <span className="font-bold">{quote.customer?.name}</span>.
             </p>
           </div>
@@ -232,6 +271,24 @@ const QuoteDetail = () => {
           </div>
           <StatusBadge status={quote.status} />
           <QuoteDownloadMenu quote={quote} disabled={!quote.proforma} />
+          {(quote.is_registered_po ||
+            quote.isRegisteredPO ||
+            quote.source === "registered_po" ||
+            quote.source_type === "registered_po" ||
+            quote.purchaseOrder) && (
+            <button
+              onClick={handleGenerateWaybill}
+              disabled={generatingWaybill || !quote.items?.length}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3.5 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-[#212121]"
+            >
+              {generatingWaybill ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Truck className="h-4 w-4" />
+              )}
+              Generate Waybill
+            </button>
+          )}
         </div>
       </div>
 
@@ -289,6 +346,12 @@ const QuoteDetail = () => {
             canDelete={
               quote.status !== "accepted" && quote.status !== "completed"
             }
+            isRegisteredPO={Boolean(
+              quote.is_registered_po ||
+              quote.isRegisteredPO ||
+              quote.source === "registered_po" ||
+              quote.source_type === "registered_po",
+            )}
           />
 
           {quote.proforma && (
@@ -320,7 +383,9 @@ const QuoteDetail = () => {
                     {quote.proforma.sentDate
                       ? new Date(quote.proforma.sentDate).toLocaleString()
                       : quote.proforma.generatedDate
-                        ? new Date(quote.proforma.generatedDate).toLocaleString()
+                        ? new Date(
+                            quote.proforma.generatedDate,
+                          ).toLocaleString()
                         : "—"}
                   </span>
                 </div>
