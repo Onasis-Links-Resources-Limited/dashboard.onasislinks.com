@@ -124,6 +124,15 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
       return;
     }
 
+    if (Number(taxRate) < 0 || Number(taxRate) > 100) {
+      setError("VAT / Tax Rate must be between 0 and 100.");
+      return;
+    }
+    if (Number(discount) < 0) {
+      setError("Discount cannot be negative.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await api.quotes.registerPO(token, {
@@ -154,6 +163,9 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
       setPONumber("");
       setItems([]);
       setNotes("");
+      setPODate(new Date().toISOString().slice(0, 10));
+      setTaxRate("7.5");
+      setDiscount("0");
     } catch (err) {
       setError(
         err?.body?.message || err?.message || "Failed to record PO Number.",

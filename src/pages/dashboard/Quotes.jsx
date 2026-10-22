@@ -208,9 +208,7 @@ const Quotes = () => {
       `Quote ${newQuote.quoteNumber || newQuote.id} created successfully!`,
     );
     fetchQuotes({ isRefresh: true });
-    setTimeout(() => {
-      navigate(`/dashboard/quotes/${newQuote.id}`);
-    }, 500);
+    navigate(`/dashboard/quotes/${newQuote.id}`);
   };
 
   const cardClasses = cn(
@@ -331,9 +329,7 @@ const Quotes = () => {
             `PO Number ${newQuote.purchaseOrder?.poNumber || newQuote.po_number || ""} recorded successfully.`,
           );
           fetchQuotes({ isRefresh: true });
-          if (newQuote.id) {
-            setTimeout(() => navigate(`/dashboard/quotes/${newQuote.id}`), 400);
-          }
+          if (newQuote.id) navigate(`/dashboard/quotes/${newQuote.id}`);
         }}
       />
     </div>

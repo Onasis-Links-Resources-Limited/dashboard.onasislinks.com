@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Download,
   RefreshCw,
@@ -27,10 +27,30 @@ const QuoteToolbar = ({
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!createMenuOpen) return;
+    const handler = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setCreateMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [createMenuOpen]);
+
+  useEffect(() => {
+  const onKey = (event) => {
+    if (event.key === "Escape") setCreateMenuOpen(false);
+  };
+  document.addEventListener("keydown", onKey);
+  return () => document.removeEventListener("keydown", onKey);
+}, []);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="relative">
+      <div className="relative" ref={menuRef}>
         <button
           onClick={() => setCreateMenuOpen((open) => !open)}
           aria-expanded={createMenuOpen}

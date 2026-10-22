@@ -190,15 +190,15 @@ const QuoteTable = ({
                 </td>
                 <td className="px-4 py-3">
                   <div className="text-gray-900 dark:text-white font-medium">
-                    {quote.customer.name}
+                    {quote.customer?.name || "—"}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {quote.customer.email}
+                    {quote.customer?.email || "—"}
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                  {quote.items.length}{" "}
-                  {quote.items.length === 1 ? "item" : "items"}
+                  {quote.items?.length ?? 0}{" "}
+                  {quote.items?.length === 1 ? "item" : "items"}
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap">
                   {formatCurrency(quote.summary.totalAmount)}
@@ -207,7 +207,18 @@ const QuoteTable = ({
                   {formatDate(quote.date)}
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={quote.status} size="sm" />
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <StatusBadge status={quote.status} size="sm" />
+                    {Boolean(
+                      quote.is_registered_po ||
+                      quote.source === "registered_po" ||
+                      quote.source_type === "registered_po",
+                    ) && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                        Direct PO
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <QuoteRowActions quote={quote} onView={onView} />
@@ -239,20 +250,31 @@ const QuoteTable = ({
                     {quote.quoteNumber}
                   </button>
                   <div className="text-sm font-medium text-gray-900 dark:text-white truncate mt-0.5">
-                    {quote.customer.name}
+                    {quote.customer?.name || "—"}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {quote.customer.email}
+                    {quote.customer?.email || "—"}
                   </div>
                 </div>
               </div>
-              <StatusBadge status={quote.status} size="sm" />
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <StatusBadge status={quote.status} size="sm" />
+                {Boolean(
+                  quote.is_registered_po ||
+                  quote.source === "registered_po" ||
+                  quote.source_type === "registered_po",
+                ) && (
+                  <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                    Direct PO
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between mt-3 text-sm">
               <div className="text-gray-500 dark:text-gray-400">
-                {quote.items.length}{" "}
-                {quote.items.length === 1 ? "item" : "items"} ·{" "}
+                {quote.items?.length ?? 0}{" "}
+                {quote.items?.length === 1 ? "item" : "items"} ·{" "}
                 {formatDate(quote.date)}
               </div>
               <div className="font-semibold text-gray-900 dark:text-white">
