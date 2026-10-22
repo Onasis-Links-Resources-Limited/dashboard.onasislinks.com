@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useLocation ,useParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../services/api";
 import toast from "react-hot-toast";
@@ -20,9 +20,12 @@ import BulkProductUpload from "./BulkProductUpload";
 const ProductForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const { createProduct, updateProduct, refetchProducts } = useDashboard();
+
+  const returnTo = location.state?.from || "/dashboard/products";
 
   const isEditMode = !!id;
   const token = localStorage.getItem("token");
@@ -259,7 +262,7 @@ const ProductForm = () => {
     if (window.confirm("Discard draft? Your progress will be lost.")) {
       clearFormData();
       clearSpecs();
-      navigate("/dashboard/products");
+      navigate(returnTo);
     }
   };
 
@@ -304,7 +307,7 @@ const ProductForm = () => {
       if (success) {
         clearFormData();
         clearSpecs();
-        navigate("/dashboard/products");
+        navigate(returnTo);
       }
     } catch {
       toast.error("Failed to save product");
