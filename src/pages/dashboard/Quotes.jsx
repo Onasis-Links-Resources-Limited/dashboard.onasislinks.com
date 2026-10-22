@@ -63,7 +63,7 @@ const Quotes = () => {
       setError(null);
 
       try {
-        const result = await api.quotes.getAll(token, {
+        const result = await api.quotes.getAll( {
           ...filters,
           page,
           limit,
@@ -119,7 +119,7 @@ const Quotes = () => {
     if (exporting) return;
     setExporting(true);
     try {
-      const blob = await api.quotes.export(token, filters);
+      const blob = await api.quotes.export( filters);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -170,7 +170,7 @@ const Quotes = () => {
   const confirmBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await api.quotes.bulkDelete(token, selectedIds);
+      await api.quotes.bulkDelete( selectedIds);
       toast.success(
         `${selectedIds.length} quote${selectedIds.length > 1 ? "s" : ""} deleted successfully.`,
       );
@@ -188,7 +188,7 @@ const Quotes = () => {
   const confirmDeleteQuote = async () => {
     setDeleting(true);
     try {
-      await api.quotes.delete(token, deleteTarget.id);
+      await api.quotes.delete( deleteTarget.id);
       toast.success(
         `Quote ${deleteTarget.quoteNumber || deleteTarget.id} deleted successfully.`,
       );

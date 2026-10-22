@@ -32,7 +32,7 @@ const QuoteRowActions = ({ quote, onView }) => {
     const loadingToastId = toast.loading?.("Preparing Proforma Invoice…");
 
     try {
-      const blob = await api.quotes.downloadProforma(token, quote.id, "pdf");
+      const blob = await api.quotes.downloadProforma( quote.id, "pdf");
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

@@ -38,7 +38,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
     setLoadingProducts(true);
     setError("");
     try {
-      const result = await api.products.getAll(token, { limit: 1000 });
+      const result = await api.products.getAll( { limit: 1000 });
       setProducts(
         Array.isArray(result.data)
           ? result.data
@@ -135,7 +135,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
 
     setSubmitting(true);
     try {
-      const result = await api.quotes.registerPO(token, {
+      const result = await api.quotes.registerPO( {
         source: "registered_po",
         source_type: "registered_po",
         is_registered_po: true,

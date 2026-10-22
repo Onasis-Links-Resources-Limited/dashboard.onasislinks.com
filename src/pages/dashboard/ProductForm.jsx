@@ -28,7 +28,7 @@ const ProductForm = () => {
   const returnTo = location.state?.from || "/dashboard/products";
 
   const isEditMode = !!id;
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
   const draftKey = isEditMode ? `product-draft-${id}` : "product-draft-new";
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -80,7 +80,7 @@ const ProductForm = () => {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await api.categories.getAll(token);
+        const response = await api.categories.getAll();
         if (response.success) setCategories(response.data);
       } catch (error) {
         console.error("Failed to load categories", error);
@@ -94,7 +94,7 @@ const ProductForm = () => {
     if (isEditMode) {
       const loadProduct = async () => {
         try {
-          const response = await api.products.getOne(token, id);
+          const response = await api.products.getOne( id);
           if (response.success) {
             setFormData({
               name: response.data.name,

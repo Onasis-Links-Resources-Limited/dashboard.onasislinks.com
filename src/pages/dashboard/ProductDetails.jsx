@@ -47,7 +47,7 @@ const ProductDetails = () => {
   const isDark = theme === "dark";
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [reason, setReason] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -80,7 +80,7 @@ const ProductDetails = () => {
 
     const loadProduct = async () => {
       try {
-        const response = await api.products.getOne(token, id);
+        const response = await api.products.getOne( id);
         if (response.success) setProduct(response.data);
       } catch (error) {
         console.error(error);

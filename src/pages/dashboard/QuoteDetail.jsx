@@ -51,11 +51,11 @@ const QuoteDetail = () => {
 
     setResending(true);
     try {
-      const result = await api.quotes.resendProforma(token, quote.id);
+      const result = await api.quotes.resendProforma( quote.id);
       if (result.success) {
         toast.success("Proforma email resent successfully!");
         // refresh quote so the banner flips to success
-        const refreshed = await api.quotes.getOne(token, id);
+        const refreshed = await api.quotes.getOne( id);
         setQuote(refreshed.data || refreshed);
       } else {
         toast.error(result.message || "Failed to resend email.");
@@ -75,7 +75,7 @@ const QuoteDetail = () => {
       setError(null);
 
       try {
-        const result = await api.quotes.getOne(token, id);
+        const result = await api.quotes.getOne( id);
         const data = result.data || result;
 
         if (!isActive) return;
@@ -103,7 +103,6 @@ const QuoteDetail = () => {
     setBusy(true);
     try {
       const result = await api.quotes.updateStatus(
-        token,
         targetQuote.id,
         status,
       );
@@ -132,7 +131,7 @@ const QuoteDetail = () => {
   const handleDelete = async (targetQuote) => {
     setBusy(true);
     try {
-      await api.quotes.delete(token, targetQuote.id);
+      await api.quotes.delete( targetQuote.id);
       toast.success(
         `Quote ${targetQuote.quoteNumber || targetQuote.id} deleted successfully.`,
       );
@@ -147,7 +146,7 @@ const QuoteDetail = () => {
   const handleGenerateProforma = async (payload) => {
     setBusy(true);
     try {
-      const result = await api.quotes.generateProforma(token, id, payload);
+      const result = await api.quotes.generateProforma( id, payload);
       const updatedQuote = result.data?.quote || result.data || result.quote;
 
       if (updatedQuote) setQuote(updatedQuote);
@@ -179,7 +178,7 @@ const QuoteDetail = () => {
   const handleRecordPurchaseOrder = async (payload) => {
     setBusy(true);
     try {
-      const result = await api.quotes.recordPO(token, id, payload);
+      const result = await api.quotes.recordPO( id, payload);
       const updated = result.data || result;
       setQuote(updated);
       setIsRecordPOOpen(false);
@@ -199,7 +198,7 @@ const QuoteDetail = () => {
 
   setGeneratingWaybill(true);
   try {
-    const blob = await api.quotes.downloadWaybill(token, quote.id);
+    const blob = await api.quotes.downloadWaybill( quote.id);
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;

@@ -41,7 +41,7 @@ export const DashboardProvider = ({ children }) => {
   const fetchDashboard = useCallback(async () => {
     setDashboardLoading(true);
     try {
-      const response = await api.dashboard.getStats(token);
+      const response = await api.dashboard.getStats();
       if (response.success) {
         setDashboardStats(response.data);
       }
@@ -55,7 +55,7 @@ export const DashboardProvider = ({ children }) => {
   const fetchCategories = useCallback(async () => {
     setCategoriesLoading(true);
     try {
-      const response = await api.categories.getAll(token);
+      const response = await api.categories.getAll();
       if (response.success) {
         setCategories(response.data);
       }
@@ -70,7 +70,7 @@ export const DashboardProvider = ({ children }) => {
   const fetchProducts = useCallback(async () => {
     setProductsLoading(true);
     try {
-      const response = await api.products.getAll(token, {
+      const response = await api.products.getAll( {
         page: 1, // Always fetch first page for all
         limit: 1000, // Fetch enough to cache and filter locally
       });
@@ -101,7 +101,7 @@ export const DashboardProvider = ({ children }) => {
   // ----- PRODUCT CRUD -----
   const createProduct = async (formData) => {
     try {
-      const response = await api.products.create(token, formData);
+      const response = await api.products.create( formData);
       if (response.success) {
         toast.success("Product created successfully!");
         fetchProducts(true);
@@ -117,7 +117,7 @@ export const DashboardProvider = ({ children }) => {
 
   const updateProduct = async (id, formData) => {
     try {
-      const response = await api.products.update(token, id, formData);
+      const response = await api.products.update( id, formData);
       if (response.success) {
         toast.success("Product updated successfully!");
         fetchProducts(true);
@@ -133,7 +133,7 @@ export const DashboardProvider = ({ children }) => {
 
   const deleteProduct = async (id) => {
     try {
-      const response = await api.products.delete(token, id);
+      const response = await api.products.delete( id);
       if (response.success) {
         toast.success("Product deleted successfully!");
         fetchProducts(true);
@@ -150,7 +150,7 @@ export const DashboardProvider = ({ children }) => {
   // ----- CATEGORY CRUD -----
   const createCategory = async (formData) => {
     try {
-      const response = await api.categories.create(token, formData);
+      const response = await api.categories.create( formData);
       if (response.success) {
         toast.success("Category created successfully!");
         fetchCategories(true);
@@ -166,7 +166,7 @@ export const DashboardProvider = ({ children }) => {
 
   const updateCategory = async (id, formData) => {
     try {
-      const response = await api.categories.update(token, id, formData);
+      const response = await api.categories.update( id, formData);
       if (response.success) {
         toast.success("Category updated successfully!");
         fetchCategories(true);
@@ -182,7 +182,7 @@ export const DashboardProvider = ({ children }) => {
 
   const deleteCategory = async (id) => {
     try {
-      const response = await api.categories.delete(token, id);
+      const response = await api.categories.delete( id);
       if (response.success) {
         toast.success("Category deleted successfully!");
         fetchCategories(true);
