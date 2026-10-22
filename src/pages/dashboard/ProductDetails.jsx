@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../services/api";
 import {
@@ -51,9 +51,9 @@ const ProductDetails = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [reason, setReason] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-   const {
-      deleteProduct,
-    } = useDashboard();
+  const { deleteProduct } = useDashboard();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleDelete = async () => {
     if (!reason.trim()) {
@@ -66,6 +66,7 @@ const ProductDetails = () => {
     if (success) {
       setDeleteTarget(null);
       setReason("");
+      navigate(location.state?.from || "/dashboard/products");
     }
   };
 
@@ -105,7 +106,9 @@ const ProductDetails = () => {
           Product not found.
         </p>
         <button
-          onClick={() => window.history.back()}
+          onClick={() =>
+            navigate(location.state?.from || "/dashboard/products")
+          }
           className="mt-6 bg-[#C3110C] text-white px-6 py-2.5 rounded-lg shadow hover:bg-[#740A03] transition flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" /> Go Back
@@ -118,13 +121,18 @@ const ProductDetails = () => {
     <div
       className={`relative z-50 min-h-screen p-6 transition-colors duration-300`}
     >
-
       {/* DELETE WARNING MODAL */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className={`w-full max-w-md rounded-xl border p-6 shadow-2xl transition-colors ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white' : 'border-gray-200 bg-white text-gray-900'}`}>
-            <h2 className="text-xl font-bold mb-2 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /> Delete Product</h2>
-            <div className={`rounded-lg p-3 mb-4 text-sm flex gap-2 ${isDark ? "bg-yellow-900/20 text-yellow-200 border border-yellow-700/50" : "bg-yellow-50 text-yellow-800 border border-yellow-200"}`}>
+          <div
+            className={`w-full max-w-md rounded-xl border p-6 shadow-2xl transition-colors ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-200 bg-white text-gray-900"}`}
+          >
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" /> Delete Product
+            </h2>
+            <div
+              className={`rounded-lg p-3 mb-4 text-sm flex gap-2 ${isDark ? "bg-yellow-900/20 text-yellow-200 border border-yellow-700/50" : "bg-yellow-50 text-yellow-800 border border-yellow-200"}`}
+            >
               <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold mb-1">Heads up! This will:</p>
@@ -134,13 +142,40 @@ const ProductDetails = () => {
                 </ul>
               </div>
             </div>
-            <p className={`mb-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Are you sure you want to delete "{deleteTarget.name}"?</p>
-            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Reason <span className="text-red-500">*</span></label>
-            <textarea value={reason} onChange={(e) => setReason(e.target.value)} className={`w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-[#C3110C] mb-4 ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white placeholder-gray-400' : 'border-gray-300 bg-white text-gray-900'}`} rows="3" placeholder="Enter your reason..." />
+            <p
+              className={`mb-4 text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+            >
+              Are you sure you want to delete "{deleteTarget.name}"?
+            </p>
+            <label
+              className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+            >
+              Reason <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-[#C3110C] mb-4 ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white placeholder-gray-400" : "border-gray-300 bg-white text-gray-900"}`}
+              rows="3"
+              placeholder="Enter your reason..."
+            />
             <div className="flex justify-end gap-3">
-              <button onClick={() => { setDeleteTarget(null); setReason(""); }} className={`px-4 py-2 text-sm font-medium rounded-lg border transition ${isDark ? 'border-[#2A2A2A] text-gray-300 hover:bg-[#212121]' : 'border-gray-300 text-gray-700'}`}>Cancel</button>
-              <button onClick={handleDelete} disabled={isDeleting} className={`px-4 py-2 text-sm font-medium rounded-lg bg-red-500 text-white hover:bg-red-600 transition flex items-center gap-2 disabled:opacity-50`}>
-                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />} Confirm Delete
+              <button
+                onClick={() => {
+                  setDeleteTarget(null);
+                  setReason("");
+                }}
+                className={`px-4 py-2 text-sm font-medium rounded-lg border transition ${isDark ? "border-[#2A2A2A] text-gray-300 hover:bg-[#212121]" : "border-gray-300 text-gray-700"}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className={`px-4 py-2 text-sm font-medium rounded-lg bg-red-500 text-white hover:bg-red-600 transition flex items-center gap-2 disabled:opacity-50`}
+              >
+                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}{" "}
+                Confirm Delete
               </button>
             </div>
           </div>
@@ -148,7 +183,7 @@ const ProductDetails = () => {
       )}
 
       <button
-        onClick={() => window.history.back()}
+        onClick={() => navigate(location.state?.from || "/dashboard/products")}
         className={`mb-6 flex items-center gap-2 text-sm font-medium transition hover:text-[#C3110C] ${isDark ? "text-gray-400" : "text-gray-600"}`}
       >
         <ArrowLeft className="w-4 h-4" /> Back to Products
@@ -393,14 +428,21 @@ const ProductDetails = () => {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() =>
-                  (window.location.href = `/dashboard/products/edit/${product.id}`)
+                  navigate(`/dashboard/products/edit/${product.id}`, {
+                    state: {
+                      from: location.state?.from || "/dashboard/products",
+                    },
+                  })
                 }
                 className={`flex items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium transition cursor-pointer ${isDark ? "border-gray-600 text-gray-300 hover:border-[#C3110C] hover:text-[#C3110C]" : "border-gray-300 text-gray-600 hover:border-[#C3110C] hover:text-[#C3110C]"}`}
               >
                 <Pencil className="w-4 h-4" /> Edit
               </button>
               <button
-                onClick={() => { setDeleteTarget(product); setReason(""); }}
+                onClick={() => {
+                  setDeleteTarget(product);
+                  setReason("");
+                }}
                 className={`flex items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium transition cursor-pointer ${isDark ? "border-gray-600 text-gray-300 hover:border-red-500 hover:text-red-500" : "border-gray-300 text-gray-600 hover:border-red-500 hover:text-red-500"}`}
               >
                 <Trash2 className="w-4 h-4" /> Delete
