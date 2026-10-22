@@ -239,6 +239,32 @@ export const api = {
       return blob;
     },
 
+    downloadWaybill: async (token, id) => {
+      const response = await fetch(
+        `${API_BASE}/quotes/${id}/waybill/download`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (!response.ok) {
+        let message = `Waybill download failed (${response.status})`;
+        try {
+          const data = await response.json();
+          message = data?.message || data?.error || message;
+        } catch {
+          // response wasn't JSON — keep the status-based message
+        }
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      if (!blob || blob.size === 0) {
+        throw new Error("The server returned an empty waybill.");
+      }
+      return blob;
+    },
+
     resendProforma: async (token, id) => {
       const response = await fetch(`${API_BASE}/quotes/${id}/proforma/resend`, {
         method: "POST",

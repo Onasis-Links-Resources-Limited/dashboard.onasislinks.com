@@ -110,6 +110,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
       .filter(Boolean);
 
   const handleSubmit = async (sendEmail) => {
+    if (submitting) return;
     setSubmitting(true);
     setError(null);
     try {

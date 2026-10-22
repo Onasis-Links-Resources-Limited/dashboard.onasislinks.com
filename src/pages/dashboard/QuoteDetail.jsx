@@ -20,7 +20,6 @@ import QuoteActions from "../../components/quotes/QuoteActions";
 import QuoteProformaPanel from "../../components/quotes/QuoteProformaPanel";
 import QuotePurchaseOrderPanel from "../../components/quotes/QuotePurchaseOrderPanel";
 import QuoteDownloadMenu from "../../components/quotes/QuoteDownloadMenu";
-import { downloadWaybillPDF } from "../../components/quotes/WaybillUtils";
 import StatusBadge from "../../components/common/StatusBadge";
 import EmptyState from "../../components/common/EmptyState";
 import { formatDate } from "../../libs/utils";
@@ -193,16 +192,33 @@ const QuoteDetail = () => {
   };
 
   const handleGenerateWaybill = async () => {
-    setGeneratingWaybill(true);
-    try {
-      await downloadWaybillPDF(quote);
-      toast.success("Waybill generated and downloaded. It was not sent.");
-    } catch (err) {
-      toast.error(err?.message || "Failed to generate waybill.");
-    } finally {
-      setGeneratingWaybill(false);
-    }
-  };
+  if (!token) {
+    toast.error("Your session expired. Please sign in again.");
+    return;
+  }
+
+  setGeneratingWaybill(true);
+  try {
+    const blob = await api.quotes.downloadWaybill(token, quote.id);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `Waybill-${quote.purchaseOrder?.poNumber || quote.po_number || quote.id}.pdf`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success("Waybill downloaded. It was not emailed.");
+  } catch (err) {
+    toast.error(err?.message || "Failed to generate waybill.");
+  } finally {
+    setGeneratingWaybill(false);
+  }
+};
 
   if (loading) {
     return (
@@ -270,6 +286,15 @@ const QuoteDetail = () => {
             </p>
           </div>
           <StatusBadge status={quote.status} />
+          {Boolean(
+            quote.is_registered_po ||
+            quote.source === "registered_po" ||
+            quote.source_type === "registered_po",
+          ) && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2.5 py-1 text-xs font-medium">
+              Direct PO
+            </span>
+          )}
           <QuoteDownloadMenu quote={quote} disabled={!quote.proforma} />
           {(quote.is_registered_po ||
             quote.isRegisteredPO ||
@@ -415,7 +440,7 @@ const QuoteDetail = () => {
                     )}
                   </div>
                 </div>
-              ) : (
+              ) : quote.proforma.emailAttempted ? (
                 <>
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-4">
                     <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -446,10 +471,14 @@ const QuoteDetail = () => {
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Sending...
                         </>
-                      ) : (
+                      ) : quote.proforma.emailAttempted ? (
                         <>
                           <Mail className="w-4 h-4" />
                           Resend Email
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-4 h-4" /> Send Email Now
                         </>
                       )}
                     </button>
@@ -457,6 +486,19 @@ const QuoteDetail = () => {
                     <QuoteDownloadMenu quote={quote} label="Download PDF" />
                   </div>
                 </>
+              ) : (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 mb-4">
+                  <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
+                      Generated but not sent
+                    </p>
+                    <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-1">
+                      This proforma was created without sending an email. Use
+                      Download PDF to share it manually.
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           )}
