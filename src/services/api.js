@@ -1,625 +1,198 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { apiFetch } from "./apiClient";
 
 export const api = {
-  // Auth endpoint
+  // Auth
   auth: {
-    staffLogin: async (email, password) => {
-      const response = await fetch(`${API_BASE}/auth/staff/login`, {
+    staffLogin: (email, password) =>
+      apiFetch("/auth/staff/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      return response.json();
-    },
+        body: { email, password },
+        skipAuth: true,  // no token needed
+      }),
 
-    logout: async (token) => {
-      const response = await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      return response.json();
-    },
+    logout: () =>
+      apiFetch("/auth/logout", { method: "POST" }),
 
-    getProfile: async (token) => {
-      const response = await fetch(`${API_BASE}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
+    getProfile: () =>
+      apiFetch("/auth/me"),
 
-    // --- NEW: Change Password ---
-    changePassword: async (token, current_password, new_password) => {
-      const response = await fetch(`${API_BASE}/auth/change-password`, {
+    changePassword: (current_password, new_password) =>
+      apiFetch("/auth/change-password", {
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ current_password, new_password }),
-      });
-      return response.json();
-    },
+        body: { current_password, new_password },
+      }),
 
-    // --- NEW: Update Profile (Name, Phone, etc) ---
-    updateProfile: async (token, data) => {
-      const response = await fetch(`${API_BASE}/auth/profile`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    },
+    updateProfile: (data) =>
+      apiFetch("/auth/profile", { method: "PUT", body: data }),
 
-    // --- NEW: Upload/Avatar Endpoint (You will need to code this backend side) ---
-    uploadAvatar: async (token, formData) => {
-      // Note: DO NOT set 'Content-Type' header when using FormData. Fetch sets it automatically with the boundary.
-      const response = await fetch(`${API_BASE}/auth/avatar`, {
-        method: "PUT", // Or PUT
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // 'Content-Type': 'multipart/form-data' <-- REMOVE THIS, fetch adds it automatically
-        },
-        body: formData,
-      });
-      return response.json();
-    },
+    uploadAvatar: (formData) =>
+      apiFetch("/auth/avatar", { method: "PUT", body: formData }),
   },
 
-  // Users endpoint
+  // Users
   users: {
-    getAll: async (token, params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(`${API_BASE}/users?${queryString}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
-
-    getOne: async (token, id) => {
-      const response = await fetch(`${API_BASE}/users/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
-
-    create: async (token, data) => {
-      const response = await fetch(`${API_BASE}/users`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    },
-
-    update: async (token, id, data) => {
-      const response = await fetch(`${API_BASE}/users/${id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    },
-
-    updateStatus: async (token, id, status) => {
-      const response = await fetch(`${API_BASE}/users/${id}/status`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      });
-      return response.json();
-    },
-
-    delete: async (token, id) => {
-      const response = await fetch(`${API_BASE}/users/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
-
-    bulkDelete: async (token, ids) => {
-      const response = await fetch(`${API_BASE}/users/bulk-delete`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ids }),
-      });
-      return response.json();
-    },
-
-    exportCSV: async (token, params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(`${API_BASE}/users/export?${queryString}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.text(); // For CSV, we just get text back!
-    },
-  },
-
-  // Quotes endpoint
-  quotes: {
-    getAll: async (token, params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(`${API_BASE}/quotes?${queryString}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
-
-    getOne: async (token, id) => {
-      const response = await fetch(`${API_BASE}/quotes/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
-
-    create: async (data) => {
-      const response = await fetch(`${API_BASE}/quotes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    },
-
-    registerPO: async (token, data) => {
-      const response = await fetch(`${API_BASE}/quotes/register-po`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok || body.success === false) {
-        const error = new Error(
-          body.message || `Request failed (${response.status})`,
-        );
-        error.body = body;
-        throw error;
-      }
-      return body;
-    },
-
-    downloadProforma: async (token, id, format = "pdf") => {
-      const response = await fetch(
-        `${API_BASE}/quotes/${id}/proforma/download?format=${format}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      // ✅ Throw on HTTP errors so the caller can show the real message
-      if (!response.ok) {
-        let message = `Download failed (${response.status})`;
-        try {
-          const data = await response.json();
-          message = data?.message || data?.error || message;
-        } catch {
-          // response wasn't JSON — keep the status-based message
-        }
-        throw new Error(message);
-      }
-
-      // ✅ Guard against an empty body
-      const blob = await response.blob();
-      if (!blob || blob.size === 0) {
-        throw new Error("The server returned an empty file.");
-      }
-      return blob;
-    },
-
-    downloadWaybill: async (token, id) => {
-      const response = await fetch(
-        `${API_BASE}/quotes/${id}/waybill/download`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (!response.ok) {
-        let message = `Waybill download failed (${response.status})`;
-        try {
-          const data = await response.json();
-          message = data?.message || data?.error || message;
-        } catch {
-          // response wasn't JSON — keep the status-based message
-        }
-        throw new Error(message);
-      }
-
-      const blob = await response.blob();
-      if (!blob || blob.size === 0) {
-        throw new Error("The server returned an empty waybill.");
-      }
-      return blob;
-    },
-
-    resendProforma: async (token, id) => {
-      const response = await fetch(`${API_BASE}/quotes/${id}/proforma/resend`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.json();
-    },
-
-    updateStatus: async (token, id, status, extra = {}) => {
-      const response = await fetch(`${API_BASE}/quotes/${id}/status`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status, ...extra }),
-      });
-      return response.json();
-    },
-
-    generateProforma: async (token, id, data) => {
-      const response = await fetch(`${API_BASE}/quotes/${id}/proforma`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      // ✅ Read ONCE — into a variable
-      const body = await response.json().catch(() => ({}));
-
-      // ✅ Branch on the already-read body
-      if (!response.ok || body.success === false) {
-        const err = new Error(
-          body.message || `Request failed (${response.status})`,
-        );
-        err.status = response.status;
-        err.body = body;
-        throw err;
-      }
-
-      return body;
-    },
-
-    recordPO: async (token, id, data) => {
-      const response = await fetch(`${API_BASE}/quotes/${id}/purchase-order`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    },
-
-    delete: async (token, id) => {
-      const response = await fetch(`${API_BASE}/quotes/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
-
-    bulkDelete: async (token, ids) => {
-      const response = await fetch(`${API_BASE}/quotes/bulk-delete`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ids }),
-      });
-      return response.json();
-    },
-
-    export: async (token, params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(`${API_BASE}/quotes/export?${queryString}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.blob();
-    },
-  },
-
-  // Dashboard endpoint
-  dashboard: {
-    getStats: async (token) => {
-      const response = await fetch(`${API_BASE}/dashboard`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
-  },
-
-  // Categories endpoint
-  categories: {
-    getAll: async (token) => {
-      const response = await fetch(`${API_BASE}/categories`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
-
-    create: async (token, formData) => {
-      const response = await fetch(`${API_BASE}/categories`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      return response.json();
-    },
-
-    update: async (token, id, formData) => {
-      const response = await fetch(`${API_BASE}/categories/${id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      return response.json();
-    },
-
-    delete: async (token, id) => {
-      const response = await fetch(`${API_BASE}/categories/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.json();
-    },
-  },
-
-  // Products endpoint
-  products: {
-    getAll: async (token, params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(`${API_BASE}/products?${queryString}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.json();
-    },
-
-    getOne: async (token, id) => {
-      const response = await fetch(`${API_BASE}/products/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.json();
-    },
-
-    create: async (token, formData) => {
-      const response = await fetch(`${API_BASE}/products`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      return response.json();
-    },
-
-    bulkCreate: async (token, products) => {
-      const response = await fetch(`${API_BASE}/products/bulk`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ products }),
-      });
-
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok || body.success === false) {
-        const err = new Error(
-          body.message || `Bulk upload failed (${response.status})`,
-        );
-        err.status = response.status;
-        err.body = body;
-        throw err;
-      }
-      return body;
-    },
-
-    update: async (token, id, formData) => {
-      const response = await fetch(`${API_BASE}/products/${id}`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      return response.json();
-    },
-
-    delete: async (token, id) => {
-      const response = await fetch(`${API_BASE}/products/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.json();
-    },
-  },
-
-  // Settings endpoint
-  settings: {
-    getCompany: async (token) => {
-      const response = await fetch(`${API_BASE}/settings/company`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.json();
-    },
-
-    updateCompany: async (token, data) => {
-      const response = await fetch(`${API_BASE}/settings/company`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    },
-
-    getNotifications: async (token) => {
-      const response = await fetch(`${API_BASE}/settings/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.json();
-    },
-
-    updateNotifications: async (token, data) => {
-      const response = await fetch(`${API_BASE}/settings/notifications`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    },
-  },
-
-  // Activity Logs endpoint
-  activityLogs: {
-    getAll: async (token, params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(`${API_BASE}/activity-logs?${queryString}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.json();
-    },
-  },
-
-  // Newsletter endpoint
-  newsletter: {
-    // Public: Subscribe
-    subscribe: async (data) => {
-      const response = await fetch(`${API_BASE}/newsletter/subscribe`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    },
-
-    // Public: Unsubscribe
-    unsubscribe: async (id) => {
-      const response = await fetch(`${API_BASE}/newsletter/unsubscribe/${id}`);
-      return response.json();
-    },
-
-    // Dashboard: Get all subscribers
-    getSubscribers: async (token, params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(
-        `${API_BASE}/newsletter/subscribers?${queryString}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      return response.json();
-    },
-
-    // Dashboard: Get stats
-    getStats: async (token) => {
-      const response = await fetch(`${API_BASE}/newsletter/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.json();
-    },
-
-    // Dashboard: Delete subscriber
-    deleteSubscriber: async (token, id) => {
-      const response = await fetch(`${API_BASE}/newsletter/subscribers/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.json();
-    },
-
-    // Dashboard: Export CSV
-    exportCSV: async (token, params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(
-        `${API_BASE}/newsletter/export?${queryString}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      return response.blob();
-    },
-  },
-
-  notifications: {
-    list: async (token, params = {}) => {
+    getAll: (params = {}) => {
       const qs = new URLSearchParams(params).toString();
-      const r = await fetch(`${API_BASE}/notifications?${qs}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!r.ok) throw new Error("Failed to load notifications");
-      return r.json();
+      return apiFetch(`/users?${qs}`);
     },
-    unreadCount: async (token) => {
-      const r = await fetch(`${API_BASE}/notifications/unread-count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!r.ok) throw new Error("Failed to load count");
-      return r.json();
+    getOne: (id) => apiFetch(`/users/${id}`),
+    create: (data) => apiFetch("/users", { method: "POST", body: data }),
+    update: (id, data) => apiFetch(`/users/${id}`, { method: "PUT", body: data }),
+    updateStatus: (id, status) =>
+      apiFetch(`/users/${id}/status`, { method: "PUT", body: { status } }),
+    delete: (id) => apiFetch(`/users/${id}`, { method: "DELETE" }),
+    bulkDelete: (ids) =>
+      apiFetch("/users/bulk-delete", { method: "POST", body: { ids } }),
+    exportCSV: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return apiFetch(`/users/export?${qs}`);
     },
-    markRead: async (token, id) => {
-      const r = await fetch(`${API_BASE}/notifications/${id}/read`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return r.json();
+  },
+
+  // Quotes
+  quotes: {
+    getAll: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return apiFetch(`/quotes?${qs}`);
     },
-    markAllRead: async (token) => {
-      const r = await fetch(`${API_BASE}/notifications/read-all`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return r.json();
+    getOne: (id) => apiFetch(`/quotes/${id}`),
+    create: (data) =>
+      apiFetch("/quotes", { method: "POST", body: data, skipAuth: true }),
+
+    registerPO: (data) =>
+      apiFetch("/quotes/register-po", { method: "POST", body: data }),
+
+    downloadProforma: (id, format = "pdf") =>
+      apiFetch(`/quotes/${id}/proforma/download?format=${format}`, { raw: true })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`Download failed (${res.status})`);
+          const blob = await res.blob();
+          if (!blob || blob.size === 0) {
+            throw new Error("The server returned an empty file.");
+          }
+          return blob;
+        }),
+
+    downloadWaybill: (id) =>
+      apiFetch(`/quotes/${id}/waybill/download`, { raw: true })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`Waybill download failed (${res.status})`);
+          const blob = await res.blob();
+          if (!blob || blob.size === 0) {
+            throw new Error("The server returned an empty waybill.");
+          }
+          return blob;
+        }),
+
+    resendProforma: (id) =>
+      apiFetch(`/quotes/${id}/proforma/resend`, { method: "POST" }),
+
+    updateStatus: (id, status, extra = {}) =>
+      apiFetch(`/quotes/${id}/status`, {
+        method: "PUT",
+        body: { status, ...extra },
+      }),
+
+    generateProforma: (id, data) =>
+      apiFetch(`/quotes/${id}/proforma`, { method: "POST", body: data }),
+
+    recordPO: (id, data) =>
+      apiFetch(`/quotes/${id}/purchase-order`, { method: "POST", body: data }),
+
+    delete: (id) => apiFetch(`/quotes/${id}`, { method: "DELETE" }),
+    bulkDelete: (ids) =>
+      apiFetch("/quotes/bulk-delete", { method: "POST", body: { ids } }),
+    export: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return apiFetch(`/quotes/export?${qs}`, { raw: true })
+        .then((res) => res.blob());
     },
+  },
+
+  // Dashboard
+  dashboard: {
+    getStats: () => apiFetch("/dashboard"),
+  },
+
+  // Categories
+  categories: {
+    getAll: () => apiFetch("/categories"),
+    create: (formData) =>
+      apiFetch("/categories", { method: "POST", body: formData }),
+    update: (id, formData) =>
+      apiFetch(`/categories/${id}`, { method: "PUT", body: formData }),
+    delete: (id) => apiFetch(`/categories/${id}`, { method: "DELETE" }),
+  },
+
+  // Products
+  products: {
+    getAll: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return apiFetch(`/products?${qs}`);
+    },
+    getOne: (id) => apiFetch(`/products/${id}`),
+    create: (formData) =>
+      apiFetch("/products", { method: "POST", body: formData }),
+    bulkCreate: (products) =>
+      apiFetch("/products/bulk", { method: "POST", body: { products } }),
+    update: (id, formData) =>
+      apiFetch(`/products/${id}`, { method: "PUT", body: formData }),
+    delete: (id) => apiFetch(`/products/${id}`, { method: "DELETE" }),
+  },
+
+  // Settings
+  settings: {
+    getCompany: () => apiFetch("/settings/company"),
+    updateCompany: (data) =>
+      apiFetch("/settings/company", { method: "PUT", body: data }),
+    getNotifications: () => apiFetch("/settings/notifications"),
+    updateNotifications: (data) =>
+      apiFetch("/settings/notifications", { method: "PUT", body: data }),
+  },
+
+  // Activity logs
+  activityLogs: {
+    getAll: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return apiFetch(`/activity-logs?${qs}`);
+    },
+  },
+
+  // Newsletter
+  newsletter: {
+    subscribe: (data) =>
+      apiFetch("/newsletter/subscribe", {
+        method: "POST",
+        body: data,
+        skipAuth: true,
+      }),
+    unsubscribe: (id) =>
+      apiFetch(`/newsletter/unsubscribe/${id}`, { skipAuth: true }),
+    getSubscribers: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return apiFetch(`/newsletter/subscribers?${qs}`);
+    },
+    getStats: () => apiFetch("/newsletter/stats"),
+    deleteSubscriber: (id) =>
+      apiFetch(`/newsletter/subscribers/${id}`, { method: "DELETE" }),
+    exportCSV: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return apiFetch(`/newsletter/export?${qs}`, { raw: true })
+        .then((res) => res.blob());
+    },
+  },
+
+  // Notifications
+  notifications: {
+    list: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return apiFetch(`/notifications?${qs}`);
+    },
+    unreadCount: () => apiFetch("/notifications/unread-count"),
+    markRead: (id) =>
+      apiFetch(`/notifications/${id}/read`, { method: "PATCH" }),
+    markAllRead: () =>
+      apiFetch("/notifications/read-all", { method: "PATCH" }),
   },
 };
 

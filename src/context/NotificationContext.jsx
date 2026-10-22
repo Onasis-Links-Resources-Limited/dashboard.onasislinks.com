@@ -21,12 +21,14 @@ export const NotificationProvider = ({ children }) => {
     if (!token) return;
     setLoading(true);
     try {
-      const [{ data }, { data: count }] = await Promise.all([
-        api.notifications.list(token, { limit: 30 }),
-        api.notifications.unreadCount(token),
+      const [listRes, countRes] = await Promise.all([
+        api.notifications.list({ limit: 30 }),
+        api.notifications.unreadCount(),
       ]);
-      setItems(data);
-      setUnread(count.count);
+      const notifications = listRes.data || [];
+      const unreadCount = countRes.data?.count || 0;
+      setItems(notifications);
+      setUnread(unreadCount);
     } catch (e) {
       console.error("Notification fetch failed", e);
     } finally {
@@ -56,7 +58,7 @@ export const NotificationProvider = ({ children }) => {
     );
     setUnread((c) => Math.max(0, c - 1));
     try {
-      await api.notifications.markRead(token, id);
+      await api.notifications.markRead(id);
     } catch {
       refresh();
     }
