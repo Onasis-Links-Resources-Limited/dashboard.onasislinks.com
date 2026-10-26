@@ -18,7 +18,7 @@ export const ProductsProvider = ({ children }) => {
   const [date, setDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
   const fetchProducts = async (isRefresh = false) => {
     // Only load if not already loaded OR explicitly refreshing
@@ -26,7 +26,7 @@ export const ProductsProvider = ({ children }) => {
 
     setLoading(true);
     try {
-      const response = await api.products.getAll(token, {
+      const response = await api.products.getAll( {
         search,
         category,
         status,
@@ -67,7 +67,7 @@ export const ProductsProvider = ({ children }) => {
 
   const createProduct = async (formData) => {
     try {
-      const response = await api.products.create(token, formData);
+      const response = await api.products.create(formData);
       if (response.success) {
         toast.success("Product created successfully!");
         fetchProducts(true);
@@ -84,7 +84,7 @@ export const ProductsProvider = ({ children }) => {
 
   const updateProduct = async (id, formData) => {
     try {
-      const response = await api.products.update(token, id, formData);
+      const response = await api.products.update(id, formData);
       if (response.success) {
         toast.success("Product updated successfully!");
         fetchProducts(true);
@@ -101,7 +101,7 @@ export const ProductsProvider = ({ children }) => {
 
   const deleteProduct = async (id) => {
     try {
-      const response = await api.products.delete(token, id);
+      const response = await api.products.delete(id);
       if (response.success) {
         toast.success("Product deleted successfully!");
         fetchProducts(true);

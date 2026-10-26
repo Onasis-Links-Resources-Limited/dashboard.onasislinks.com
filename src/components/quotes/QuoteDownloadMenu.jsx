@@ -49,7 +49,7 @@ const QuoteDownloadMenu = ({ quote, disabled = false, label = "Download" }) => {
     );
 
     try {
-      const blob = await api.quotes.downloadProforma(token, quote.id, format);
+      const blob = await api.quotes.downloadProforma(quote.id, format);
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

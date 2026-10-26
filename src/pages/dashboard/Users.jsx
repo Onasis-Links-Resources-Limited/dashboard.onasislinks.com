@@ -76,7 +76,7 @@ const Users = () => {
 
       setError(null);
       try {
-        const result = await api.users.getAll(token, {
+        const result = await api.users.getAll( {
           search: "",
           role: "all",
           status: "all",
@@ -164,7 +164,7 @@ const Users = () => {
     if (exporting) return;
     setExporting(true);
     try {
-      const csv = await api.users.exportCSV(token, filters);
+      const csv = await api.users.exportCSV(filters);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -205,7 +205,7 @@ const Users = () => {
   const confirmBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await api.users.bulkDelete(token, selectedIds, { reason: bulkReason });
+      await api.users.bulkDelete(selectedIds, { reason: bulkReason });
       toast.success(`${selectedIds.length} user(s) deleted.`);
       setSelectedIds([]);
       setBulkDeleteOpen(false);
@@ -221,10 +221,10 @@ const Users = () => {
   const handleSaveUser = async (form) => {
     try {
       if (editingUser) {
-        await api.users.update(token, editingUser.id, form);
+        await api.users.update(editingUser.id, form);
         toast.success("User updated successfully.");
       } else {
-        await api.users.create(token, form);
+        await api.users.create(form);
         toast.success("User created successfully.");
       }
       setFormOpen(false);
@@ -239,7 +239,7 @@ const Users = () => {
 
   const handleStatusChange = async (user, status) => {
     try {
-      await api.users.updateStatus(token, user.id, status);
+      await api.users.updateStatus(user.id, status);
       toast.success(`${user.name}'s status set to ${status}.`);
       setAllUsers((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, status } : u)),
@@ -252,7 +252,7 @@ const Users = () => {
   const confirmDeleteUser = async () => {
     setDeleting(true);
     try {
-      await api.users.delete(token, deleteTarget.id, { reason: deleteReason });
+      await api.users.delete(deleteTarget.id, { reason: deleteReason });
       toast.success("User deleted successfully.");
       setDeleteTarget(null);
       setDeleteReason("");

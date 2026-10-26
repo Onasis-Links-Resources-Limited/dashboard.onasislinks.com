@@ -105,7 +105,7 @@ const ActivityLog = () => {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const response = await api.activityLogs.getAll(token, { search: "", limit: 200 });
+        const response = await api.activityLogs.getAll({ search: "", limit: 200 });
         if (response.success) setAllLogs(response.data);
       } catch (error) {
         console.error("Failed to fetch logs", error);

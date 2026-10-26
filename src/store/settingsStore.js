@@ -23,11 +23,11 @@ export const useSettingsStore = create((set, get) => ({
   fetchSettings: async () => {
     if (get().loading) return;
     set({ loading: true });
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
     try {
       const [c, n] = await Promise.all([
-        api.settings.getCompany(token),
-        api.settings.getNotifications(token),
+        api.settings.getCompany(),
+        api.settings.getNotifications(),
       ]);
       set({
         company: c.data || DEFAULT_COMPANY,

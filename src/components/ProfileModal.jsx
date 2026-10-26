@@ -55,8 +55,8 @@ const ProfileModal = ({ isOpen, onClose }) => {
   const handleProfileUpdate = async () => {
     if (!formData.first_name.trim()) return;
     setIsEditing(false);
-    const token = localStorage.getItem('token');
-    const response = await api.auth.updateProfile(token, formData);
+    // const token = localStorage.getItem('token');
+    const response = await api.auth.updateProfile( formData);
     if (response.success) {
       updateGlobalUser(response.data);
     } else {
@@ -73,8 +73,8 @@ const ProfileModal = ({ isOpen, onClose }) => {
     setIsChangingPass(true);
     setPassMessage({ type: '', text: '' });
     try {
-      const token = localStorage.getItem('token'); 
-      const data = await api.auth.changePassword(token, passData.current_password, passData.new_password);
+      // const token = localStorage.getItem('token'); 
+      const data = await api.auth.changePassword(passData.current_password, passData.new_password);
       if (data.success) {
         setPassMessage({ type: 'success', text: 'Password changed successfully!' });
         setPassData({ current_password: '', new_password: '' });
@@ -94,8 +94,8 @@ const ProfileModal = ({ isOpen, onClose }) => {
     if (!file) return;
     const formData = new FormData();
     formData.append('avatar', file);
-    const token = localStorage.getItem('token');
-    const response = await api.auth.uploadAvatar(token, formData);
+    // const token = localStorage.getItem('token');
+    const response = await api.auth.uploadAvatar(formData);
     if (response.success) {
       updateGlobalUser({ avatar_url: response.data.avatar_url });
       setSelectedAvatar(null); 

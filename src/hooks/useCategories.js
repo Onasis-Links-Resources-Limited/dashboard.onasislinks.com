@@ -14,7 +14,7 @@ export const useCategories = () => {
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.categories.getAll(token);
+      const response = await api.categories.getAll();
       if (response.success) {
         setCategories(response.data);
       }
@@ -36,7 +36,7 @@ export const useCategories = () => {
 
   const createCategory = async (formData) => {
     try {
-      const response = await api.categories.create(token, formData);
+      const response = await api.categories.create(formData);
       if (response.success) {
         toast.success("Category created successfully!");
         fetchCategories();
@@ -54,7 +54,7 @@ export const useCategories = () => {
 
   const updateCategory = async (id, formData) => {
     try {
-      const response = await api.categories.update(token, id, formData);
+      const response = await api.categories.update(id, formData);
       if (response.success) {
         toast.success("Category updated successfully!");
         fetchCategories();
@@ -72,7 +72,7 @@ export const useCategories = () => {
 
   const deleteCategory = async (id) => {
     try {
-      const response = await api.categories.delete(token, id);
+      const response = await api.categories.delete(id);
       if (response.success) {
         toast.success("Category deleted successfully!");
         fetchCategories();

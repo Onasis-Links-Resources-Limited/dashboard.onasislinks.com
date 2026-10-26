@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, FileText, Plus, AlertCircle } from "lucide-react";
+import { X, FileText, Plus, AlertCircle, Minus } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
 const defaultValidUntil = () => {
@@ -8,6 +8,8 @@ const defaultValidUntil = () => {
   d.setDate(d.getDate() + 30);
   return d.toISOString().slice(0, 10);
 };
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const formatMoney = (amount) =>
   new Intl.NumberFormat("en-NG", {
@@ -21,6 +23,9 @@ const TERMS_OPTIONS = [
   "Ex work",
 ];
 
+const UOM_OPTIONS = ["Unit", "PCS", "PAK", "M"];
+const UOM_OTHER = "__other__";
+
 const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
@@ -31,6 +36,39 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
       (quote?.items || []).map((item) => [item.id, item.unitPrice || ""]),
     ),
   );
+
+  // ✅ NEW: editable quantities per item
+  const [quantities, setQuantities] = useState(() =>
+    Object.fromEntries(
+      (quote?.items || []).map((item) => [item.id, item.quantity || 1]),
+    ),
+  );
+
+  // ✅ NEW: UOM per item — value is the selected option, or "__other__"
+  //    customUOM tracks the free-text value when "__other__" is selected.
+  const [uoms, setUoms] = useState(() =>
+    Object.fromEntries(
+      (quote?.items || []).map((item) => {
+        const initial = (item.unit || "").trim();
+        const matched = UOM_OPTIONS.find(
+          (u) => u.toLowerCase() === initial.toLowerCase(),
+        );
+        return [item.id, matched || (initial ? UOM_OTHER : "Unit")];
+      }),
+    ),
+  );
+  const [customUOMs, setCustomUOMs] = useState(() =>
+    Object.fromEntries(
+      (quote?.items || []).map((item) => {
+        const initial = (item.unit || "").trim();
+        const matched = UOM_OPTIONS.find(
+          (u) => u.toLowerCase() === initial.toLowerCase(),
+        );
+        return [item.id, matched ? "" : initial];
+      }),
+    ),
+  );
+
   const [discount, setDiscount] = useState(quote?.summary?.discount || 0);
   const [validUntil, setValidUntil] = useState(
     quote?.proforma?.validUntil || defaultValidUntil(),
@@ -72,7 +110,10 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   const { subtotal, taxAmount, total } = useMemo(() => {
     const st = round2(
       items.reduce(
-        (sum, item) => sum + (Number(prices[item.id]) || 0) * item.quantity,
+        (sum, item) =>
+          sum +
+          (Number(prices[item.id]) || 0) *
+            (Number(quantities[item.id]) || 0),
         0,
       ),
     );
@@ -82,13 +123,26 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
       taxAmount: tax,
       total: round2(st + tax - (Number(discount) || 0)),
     };
-  }, [items, prices, discount]);
+  }, [items, prices, quantities, discount]);
 
   if (!open || !quote) return null;
 
   const hasItems = items.length > 0;
   const allPriced =
     hasItems && items.every((item) => Number(prices[item.id]) > 0);
+  const allQuantified =
+    hasItems &&
+    items.every((item) => Number(quantities[item.id]) > 0);
+  const allUOMSet =
+    hasItems &&
+    items.every((item) => {
+      const u = uoms[item.id];
+      if (u === UOM_OTHER) return (customUOMs[item.id] || "").trim() !== "";
+      return Boolean(u);
+    });
+
+  const today = todayISO();
+  const validDateOK = validUntil && validUntil >= today;
 
   const buildNotes = () => {
     const parts = [];
@@ -109,10 +163,41 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
       .map((email) => email.trim())
       .filter(Boolean);
 
+  // ✅ Quantity helpers
+  const setQty = (itemId, value) => {
+    const n = Number.parseInt(value, 10);
+    setQuantities((q) => ({
+      ...q,
+      [itemId]: Number.isFinite(n) && n > 0 ? n : 1,
+    }));
+  };
+  const incQty = (itemId) => {
+    setQuantities((q) => ({
+      ...q,
+      [itemId]: (Number(q[itemId]) || 0) + 1,
+    }));
+  };
+  const decQty = (itemId) => {
+    setQuantities((q) => ({
+      ...q,
+      [itemId]: Math.max(1, (Number(q[itemId]) || 1) - 1),
+    }));
+  };
+
   const handleSubmit = async (sendEmail) => {
     if (submitting) return;
-    setSubmitting(true);
     setError(null);
+
+    if (!validDateOK) {
+      setError("Valid Until must be today or a future date.");
+      return;
+    }
+    if (!allUOMSet) {
+      setError("Please specify a UOM for every item.");
+      return;
+    }
+
+    setSubmitting(true);
     try {
       const notes = buildNotes();
       const to = parseEmails(toEmails);
@@ -131,10 +216,16 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         );
         return;
       }
+
       await onGenerate({
         items: items.map((item) => ({
           id: item.id,
           unitPrice: Number(prices[item.id]) || 0,
+          quantity: Number(quantities[item.id]) || 1,
+          unit:
+            uoms[item.id] === UOM_OTHER
+              ? (customUOMs[item.id] || "").trim()
+              : uoms[item.id],
         })),
         discount: Number(discount) || 0,
         validUntil,
@@ -209,7 +300,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-[#1A1A1A] rounded-2xl shadow-xl border border-gray-100 dark:border-[#2A2A2A] overflow-hidden">
+      <div className="w-full max-w-3xl max-h-[90vh] flex flex-col bg-white dark:bg-[#1A1A1A] rounded-2xl shadow-xl border border-gray-100 dark:border-[#2A2A2A] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-[#2A2A2A]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-[#C3110C]/10 dark:bg-[#E6501B]/10 text-[#C3110C] dark:text-[#E6501B] flex items-center justify-center">
@@ -235,7 +326,6 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         </div>
 
         <div className="overflow-y-auto p-5 space-y-4">
-          {/* ✅ Empty-state guard */}
           {!hasItems && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
               <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -252,8 +342,9 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
           )}
 
           <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
-            Assign a unit price to each requested item. Choose whether to only
-            generate the invoice or also email it to the recipients below.
+            Assign a unit price, quantity, and UOM to each item. Choose whether
+            to only generate the invoice or also email it to the recipients
+            below.
           </p>
 
           <div className="border border-gray-200 dark:border-[#2A2A2A] rounded-lg overflow-hidden">
@@ -261,54 +352,127 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
               <thead>
                 <tr className="bg-gray-50 dark:bg-[#1A1A1A] text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   <th className="px-3 py-2">Item</th>
-                  <th className="px-3 py-2 text-center">Qty</th>
-                  <th className="px-3 py-2 w-32">Unit Price (₦)</th>
-                  <th className="px-3 py-2 text-right">Total</th>
+                  <th className="px-3 py-2 text-center w-32">Qty</th>
+                  <th className="px-3 py-2 w-28">UOM</th>
+                  <th className="px-3 py-2 w-28">Unit Price (₦)</th>
+                  <th className="px-3 py-2 text-right w-32">Total</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="border-t border-gray-100 dark:border-[#2A2A2A]"
-                  >
-                    <td className="px-3 py-2">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {item.name}
-                      </div>
-                      {item.specifications && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {renderSpecifications(item.specifications)}
+                {items.map((item) => {
+                  const qty = Number(quantities[item.id]) || 1;
+                  const uom = uoms[item.id];
+                  const price = Number(prices[item.id]) || 0;
+
+                  return (
+                    <tr
+                      key={item.id}
+                      className="border-t border-gray-100 dark:border-[#2A2A2A] align-top"
+                    >
+                      <td className="px-3 py-2">
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {item.name}
                         </div>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-center text-gray-600 dark:text-gray-300">
-                      {item.quantity}
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={prices[item.id]}
-                        onChange={(e) =>
-                          setPrices((p) => ({
-                            ...p,
-                            [item.id]: e.target.value,
-                          }))
-                        }
-                        placeholder="0.00"
-                        aria-label={`Unit price for ${item.name}`}
-                        className="w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                      {formatMoney(
-                        (Number(prices[item.id]) || 0) * item.quantity,
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                        {item.specifications && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {renderSpecifications(item.specifications)}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* ✅ Qty with ± controls */}
+                      <td className="px-3 py-2">
+                        <div className="inline-flex items-center rounded-md border border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => decQty(item.id)}
+                            disabled={qty <= 1}
+                            aria-label="Decrease quantity"
+                            className="px-2 py-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#212121] disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={qty}
+                            onChange={(e) => setQty(item.id, e.target.value)}
+                            aria-label={`Quantity for ${item.name}`}
+                            className="w-14 text-center text-sm bg-transparent outline-none text-gray-900 dark:text-white [appearance:textfield]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => incQty(item.id)}
+                            aria-label="Increase quantity"
+                            className="px-2 py-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#212121]"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* ✅ UOM selectable + custom */}
+                      <td className="px-3 py-2">
+                        <select
+                          value={uom}
+                          onChange={(e) =>
+                            setUoms((u) => ({
+                              ...u,
+                              [item.id]: e.target.value,
+                            }))
+                          }
+                          aria-label={`Unit of measure for ${item.name}`}
+                          className="w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
+                        >
+                          {UOM_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                          <option value={UOM_OTHER}>Other…</option>
+                        </select>
+                        {uom === UOM_OTHER && (
+                          <input
+                            type="text"
+                            value={customUOMs[item.id] || ""}
+                            onChange={(e) =>
+                              setCustomUOMs((c) => ({
+                                ...c,
+                                [item.id]: e.target.value,
+                              }))
+                            }
+                            placeholder="Custom UOM"
+                            aria-label={`Custom unit of measure for ${item.name}`}
+                            className="mt-1 w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-xs px-2 py-1 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
+                          />
+                        )}
+                      </td>
+
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={prices[item.id]}
+                          onChange={(e) =>
+                            setPrices((p) => ({
+                              ...p,
+                              [item.id]: e.target.value,
+                            }))
+                          }
+                          placeholder="0.00"
+                          aria-label={`Unit price for ${item.name}`}
+                          className="w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
+                        />
+                      </td>
+
+                      <td className="px-3 py-2 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                        {formatMoney(price * qty)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -334,9 +498,19 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
               <input
                 type="date"
                 value={validUntil}
+                min={today}
                 onChange={(e) => setValidUntil(e.target.value)}
-                className="w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
+                className={`w-full border rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none ${
+                  !validDateOK
+                    ? "border-red-400 dark:border-red-600"
+                    : "border-gray-200 dark:border-[#2A2A2A]"
+                }`}
               />
+              {!validDateOK && (
+                <p className="mt-1 text-[11px] text-red-600 dark:text-red-400">
+                  Must be today or later.
+                </p>
+              )}
             </div>
           </div>
 
@@ -414,7 +588,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
               onClick={() => setShowCustomInput(!showCustomInput)}
               className="text-xs text-[#C3110C] dark:text-[#E6501B] hover:underline flex items-center gap-1 mb-2"
             >
-              <Plus className="w-3 h-3" />
+              {showCustomInput ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3"/>}
               {showCustomInput ? "Hide custom notes" : "Add custom notes"}
             </button>
 
@@ -429,7 +603,6 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
             )}
           </div>
 
-          {/* ✅ Inline error, part of the flow */}
           {error && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
@@ -460,10 +633,10 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
             </div>
           </div>
 
-          {hasItems && !allPriced && (
+          {hasItems && (!allPriced || !allQuantified) && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
-              Every item needs a unit price greater than ₦0 before the Proforma
-              Invoice can be generated.
+              Every item needs a unit price greater than ₦0 and a quantity of at
+              least 1 before the Proforma Invoice can be generated.
             </p>
           )}
         </div>
@@ -478,7 +651,14 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
           </button>
           <button
             onClick={() => handleSubmit(false)}
-            disabled={submitting || !allPriced || !hasItems}
+            disabled={
+              submitting ||
+              !allPriced ||
+              !hasItems ||
+              !allQuantified ||
+              !allUOMSet ||
+              !validDateOK
+            }
             type="button"
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#212121] transition-colors disabled:opacity-50"
           >
@@ -489,7 +669,14 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
           </button>
           <button
             onClick={() => handleSubmit(true)}
-            disabled={submitting || !allPriced || !hasItems}
+            disabled={
+              submitting ||
+              !allPriced ||
+              !hasItems ||
+              !allQuantified ||
+              !allUOMSet ||
+              !validDateOK
+            }
             type="button"
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#C3110C] text-white hover:bg-[#a80e0a] transition-colors disabled:opacity-50"
           >
