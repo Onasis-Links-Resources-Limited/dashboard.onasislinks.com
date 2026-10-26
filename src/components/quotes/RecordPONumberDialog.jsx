@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, Loader2, Plus, Trash2, X } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../services/api";
+import ProductSearchSelect from "../common/ProductSearchSelect";
+import { usePersistedState } from "../../hooks/usePersistedState";
 
 const inputClass =
   "w-full rounded-lg border border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#C3110C]";
@@ -15,30 +18,51 @@ const money = (value) =>
 
 const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
   const { theme } = useTheme();
-  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [customer, setCustomer] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    company: "",
-    address: "",
-  });
-  const [poNumber, setPONumber] = useState("");
-  const [poDate, setPODate] = useState(new Date().toISOString().slice(0, 10));
-  const [taxRate, setTaxRate] = useState("7.5");
-  const [discount, setDiscount] = useState("0");
-  const [notes, setNotes] = useState("");
-  const [items, setItems] = useState([]);
+
+  const [customer, setCustomer, clearCustomer] = usePersistedState(
+    "register-po-customer",
+    { name: "", email: "", phone: "", company: "", address: "" },
+  );
+  const [poNumber, setPONumber, clearPONumber] = usePersistedState(
+    "register-po-number",
+    "",
+  );
+  const [poDate, setPODate, clearPODate] = usePersistedState(
+    "register-po-date",
+    new Date().toISOString().slice(0, 10),
+  );
+  const [taxRate, setTaxRate, clearTaxRate] = usePersistedState(
+    "register-po-tax",
+    "7.5",
+  );
+  const [discount, setDiscount, clearDiscount] = usePersistedState(
+    "register-po-discount",
+    "0",
+  );
+  const [notes, setNotes, clearNotes] = usePersistedState(
+    "register-po-notes",
+    "",
+  );
+  // ✅ FIX: was `useState("register-po-items", [])` — invalid call
+  const [items, setItems, clearItems] = usePersistedState(
+    "register-po-items",
+    [],
+  );
+
+  const newProductId = location.state?.newProductId;
 
   const fetchProducts = useCallback(async () => {
     setLoadingProducts(true);
     setError("");
     try {
-      const result = await api.products.getAll( { limit: 1000 });
+      const result = await api.products.getAll({ limit: 1000 });
       setProducts(
         Array.isArray(result.data)
           ? result.data
@@ -51,8 +75,9 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
     } finally {
       setLoadingProducts(false);
     }
-  }, [token]);
+  }, []);
 
+  // ✅ FIX: fetch was commented out — now runs when dialog opens
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(() => void fetchProducts(), 0);
@@ -75,6 +100,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
 
   const updateCustomer = (field, value) =>
     setCustomer((previous) => ({ ...previous, [field]: value }));
+
   const addItem = () =>
     setItems((previous) => [
       ...previous,
@@ -85,12 +111,14 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
         unit_price: "",
       },
     ]);
+
   const updateItem = (key, field, value) =>
     setItems((previous) =>
       previous.map((item) =>
         item.key === key ? { ...item, [field]: value } : item,
       ),
     );
+
   const removeItem = (key) =>
     setItems((previous) => previous.filter((item) => item.key !== key));
 
@@ -135,7 +163,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
 
     setSubmitting(true);
     try {
-      const result = await api.quotes.registerPO( {
+      const result = await api.quotes.registerPO({
         source: "registered_po",
         source_type: "registered_po",
         is_registered_po: true,
@@ -158,7 +186,17 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
       });
       const created =
         result.data?.quote || result.data || result.quote || result;
-      onPOCreated(created);
+
+      // Clear drafts
+      clearCustomer();
+      clearPONumber();
+      clearPODate();
+      clearTaxRate();
+      clearDiscount();
+      clearNotes();
+      clearItems();
+
+      // Reset local state
       setCustomer({ name: "", email: "", phone: "", company: "", address: "" });
       setPONumber("");
       setItems([]);
@@ -166,6 +204,8 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
       setPODate(new Date().toISOString().slice(0, 10));
       setTaxRate("7.5");
       setDiscount("0");
+
+      onPOCreated(created);
     } catch (err) {
       setError(
         err?.body?.message || err?.message || "Failed to record PO Number.",
@@ -226,9 +266,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                 <input
                   required
                   value={customer.name}
-                  onChange={(event) =>
-                    updateCustomer("name", event.target.value)
-                  }
+                  onChange={(e) => updateCustomer("name", e.target.value)}
                   className={`${inputClass} mt-1`}
                   placeholder="Customer name"
                 />
@@ -239,9 +277,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                   required
                   type="email"
                   value={customer.email}
-                  onChange={(event) =>
-                    updateCustomer("email", event.target.value)
-                  }
+                  onChange={(e) => updateCustomer("email", e.target.value)}
                   className={`${inputClass} mt-1`}
                   placeholder="customer@example.com"
                 />
@@ -250,9 +286,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                 Phone
                 <input
                   value={customer.phone}
-                  onChange={(event) =>
-                    updateCustomer("phone", event.target.value)
-                  }
+                  onChange={(e) => updateCustomer("phone", e.target.value)}
                   className={`${inputClass} mt-1`}
                   placeholder="+234…"
                 />
@@ -261,9 +295,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                 Company
                 <input
                   value={customer.company}
-                  onChange={(event) =>
-                    updateCustomer("company", event.target.value)
-                  }
+                  onChange={(e) => updateCustomer("company", e.target.value)}
                   className={`${inputClass} mt-1`}
                   placeholder="Company name"
                 />
@@ -272,9 +304,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                 Address
                 <input
                   value={customer.address}
-                  onChange={(event) =>
-                    updateCustomer("address", event.target.value)
-                  }
+                  onChange={(e) => updateCustomer("address", e.target.value)}
                   className={`${inputClass} mt-1`}
                   placeholder="Delivery / billing address"
                 />
@@ -284,7 +314,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                 <input
                   required
                   value={poNumber}
-                  onChange={(event) => setPONumber(event.target.value)}
+                  onChange={(e) => setPONumber(e.target.value)}
                   className={`${inputClass} mt-1`}
                   placeholder="e.g. PO-2026-0456"
                 />
@@ -294,7 +324,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                 <input
                   type="date"
                   value={poDate}
-                  onChange={(event) => setPODate(event.target.value)}
+                  onChange={(e) => setPODate(e.target.value)}
                   className={`${inputClass} mt-1`}
                 />
               </label>
@@ -336,6 +366,9 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                   const product = products.find(
                     (entry) => String(entry.id) === String(item.product_id),
                   );
+                  const isEmptyRow = !item.product_id;
+                  const shouldAutoSelect = isEmptyRow && newProductId;
+
                   return (
                     <div
                       key={item.key}
@@ -343,26 +376,32 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                     >
                       <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
                         Product {index + 1}
-                        <select
-                          required
-                          value={item.product_id}
-                          onChange={(event) =>
-                            updateItem(
-                              item.key,
-                              "product_id",
-                              event.target.value,
-                            )
-                          }
-                          className={`${inputClass} mt-1`}
-                        >
-                          <option value="">Select product…</option>
-                          {products.map((entry) => (
-                            <option key={entry.id} value={entry.id}>
-                              {entry.name}
-                              {entry.sku ? ` (${entry.sku})` : ""}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="mt-1">
+                          <ProductSearchSelect
+                            products={products}
+                            value={item.product_id}
+                            onChange={(newId) =>
+                              updateItem(item.key, "product_id", newId)
+                            }
+                            defaultSelectId={
+                              shouldAutoSelect ? newProductId : undefined
+                            }
+                            placeholder="Search products by name or SKU…"
+                            disabled={submitting}
+                            required
+                            onAddProduct={() => {
+                              const currentPath =
+                                window.location.pathname +
+                                window.location.search;
+                              navigate("/dashboard/products/add", {
+                                state: {
+                                  from: currentPath,
+                                  returnToDialog: "register-po",
+                                },
+                              });
+                            }}
+                          />
+                        </div>
                         {product?.unit && (
                           <span className="mt-1 block text-[11px] text-gray-500">
                             Unit: {product.unit}
@@ -377,8 +416,8 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                           min="1"
                           step="1"
                           value={item.quantity}
-                          onChange={(event) =>
-                            updateItem(item.key, "quantity", event.target.value)
+                          onChange={(e) =>
+                            updateItem(item.key, "quantity", e.target.value)
                           }
                           className={`${inputClass} mt-1`}
                         />
@@ -391,12 +430,8 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                           min="0.01"
                           step="0.01"
                           value={item.unit_price}
-                          onChange={(event) =>
-                            updateItem(
-                              item.key,
-                              "unit_price",
-                              event.target.value,
-                            )
+                          onChange={(e) =>
+                            updateItem(item.key, "unit_price", e.target.value)
                           }
                           className={`${inputClass} mt-1`}
                           placeholder="0.00"
@@ -430,7 +465,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                 min="0"
                 step="0.01"
                 value={taxRate}
-                onChange={(event) => setTaxRate(event.target.value)}
+                onChange={(e) => setTaxRate(e.target.value)}
                 className={`${inputClass} mt-1`}
               />
             </label>
@@ -441,7 +476,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
                 min="0"
                 step="0.01"
                 value={discount}
-                onChange={(event) => setDiscount(event.target.value)}
+                onChange={(e) => setDiscount(e.target.value)}
                 className={`${inputClass} mt-1`}
               />
             </label>
@@ -450,7 +485,7 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
               <textarea
                 rows={3}
                 value={notes}
-                onChange={(event) => setNotes(event.target.value)}
+                onChange={(e) => setNotes(e.target.value)}
                 className={`${inputClass} mt-1 resize-y`}
                 placeholder="Agreed payment, delivery terms or other PO notes"
               />
@@ -495,8 +530,8 @@ const RecordPONumberDialog = ({ open, onClose, onPOCreated }) => {
             disabled={submitting || loadingProducts || !items.length}
             className="inline-flex items-center gap-2 rounded-lg bg-[#C3110C] px-4 py-2 text-sm font-medium text-white hover:bg-[#a80e0a] disabled:opacity-50"
           >
-            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}Register
-            PO Number
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            Register PO Number
           </button>
         </div>
       </form>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation ,useParams, useNavigate } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../services/api";
 import toast from "react-hot-toast";
@@ -94,7 +94,7 @@ const ProductForm = () => {
     if (isEditMode) {
       const loadProduct = async () => {
         try {
-          const response = await api.products.getOne( id);
+          const response = await api.products.getOne(id);
           if (response.success) {
             setFormData({
               name: response.data.name,
@@ -297,17 +297,22 @@ const ProductForm = () => {
     if (imageFile) formDataObj.append("image", imageFile);
 
     try {
-      let success;
-      if (isEditMode) {
-        success = await updateProduct(id, formDataObj);
-      } else {
-        success = await createProduct(formDataObj);
-      }
+      // ✅ createProduct / updateProduct now return the product object (or null)
+      const result = isEditMode
+        ? await updateProduct(id, formDataObj)
+        : await createProduct(formDataObj);
 
-      if (success) {
+      if (result) {
         clearFormData();
         clearSpecs();
-        navigate(returnTo);
+
+        // ✅ Navigate back with returnToDialog + newProductId
+        navigate(returnTo, {
+          state: {
+            returnToDialog: location.state?.returnToDialog,
+            newProductId: typeof result === "object" ? result.id : undefined,
+          },
+        });
       }
     } catch {
       toast.error("Failed to save product");

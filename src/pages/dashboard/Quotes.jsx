@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -23,10 +23,11 @@ const hasActiveFilters = (filters) =>
 
 const Quotes = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
   const [quotes, setQuotes] = useState([]);
   const [meta, setMeta] = useState({
@@ -63,7 +64,7 @@ const Quotes = () => {
       setError(null);
 
       try {
-        const result = await api.quotes.getAll( {
+        const result = await api.quotes.getAll({
           ...filters,
           page,
           limit,
@@ -97,13 +98,25 @@ const Quotes = () => {
         }
       }
     },
-    [filters, page, limit, token],
+    [filters, page, limit],
   );
 
   useEffect(() => {
     fetchQuotes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, page, limit]);
+
+  useEffect(() => {
+    const returnTo = location.state?.returnToDialog;
+    if (!returnTo) return;
+
+    if (returnTo === "register-po") setRecordPODialogOpen(true);
+    if (returnTo === "add-quote") setAddQuoteDialogOpen(true);
+
+    // ✅ Clear the state so it doesn't re-fire on future navigations
+    navigate(location.pathname, { replace: true, state: {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const handleFiltersChange = (nextFilters) => {
     setFilters(nextFilters);
@@ -119,7 +132,7 @@ const Quotes = () => {
     if (exporting) return;
     setExporting(true);
     try {
-      const blob = await api.quotes.export( filters);
+      const blob = await api.quotes.export(filters);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -170,7 +183,7 @@ const Quotes = () => {
   const confirmBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await api.quotes.bulkDelete( selectedIds);
+      await api.quotes.bulkDelete(selectedIds);
       toast.success(
         `${selectedIds.length} quote${selectedIds.length > 1 ? "s" : ""} deleted successfully.`,
       );
@@ -188,7 +201,7 @@ const Quotes = () => {
   const confirmDeleteQuote = async () => {
     setDeleting(true);
     try {
-      await api.quotes.delete( deleteTarget.id);
+      await api.quotes.delete(deleteTarget.id);
       toast.success(
         `Quote ${deleteTarget.quoteNumber || deleteTarget.id} deleted successfully.`,
       );

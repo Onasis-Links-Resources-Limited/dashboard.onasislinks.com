@@ -50,7 +50,7 @@ export const DashboardProvider = ({ children }) => {
     } finally {
       setDashboardLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const fetchCategories = useCallback(async () => {
     setCategoriesLoading(true);
@@ -64,7 +64,7 @@ export const DashboardProvider = ({ children }) => {
     } finally {
       setCategoriesLoading(false);
     }
-  }, [token]);
+  }, []);
 
   // ✅ Fetch ALL products. Filtering happens on frontend.
   const fetchProducts = useCallback(async () => {
@@ -82,7 +82,7 @@ export const DashboardProvider = ({ children }) => {
     } finally {
       setProductsLoading(false);
     }
-  }, [token]);
+  }, []);
 
   // ----- INITIAL LOAD (Runs once) -----
   useEffect(() => {
@@ -104,14 +104,14 @@ export const DashboardProvider = ({ children }) => {
       const response = await api.products.create( formData);
       if (response.success) {
         toast.success("Product created successfully!");
-        fetchProducts(true);
-        return true;
+        fetchProducts();
+        return response.data;
       }
       toast.error(response.message || "Failed to create product.");
-      return false;
+      return null;
     } catch {
       toast.error("Network error.");
-      return false;
+      return null;
     }
   };
 
@@ -120,14 +120,14 @@ export const DashboardProvider = ({ children }) => {
       const response = await api.products.update( id, formData);
       if (response.success) {
         toast.success("Product updated successfully!");
-        fetchProducts(true);
-        return true;
+        fetchProducts();
+        return response.data;
       }
       toast.error(response.message || "Failed to update product.");
-      return false;
+      return null;
     } catch {
       toast.error("Network error.");
-      return false;
+      return null;
     }
   };
 

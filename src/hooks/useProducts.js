@@ -17,7 +17,7 @@ export const useProducts = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.products.getAll(token, {
+      const response = await api.products.getAll({
         search,
         category,
         status,
@@ -45,7 +45,7 @@ export const useProducts = () => {
 
   const createProduct = async (formData) => {
     try {
-      const response = await api.products.create(token, formData);
+      const response = await api.products.create(formData);
       if (response.success) {
         toast.success("Product created successfully!");
         fetchProducts();
@@ -62,7 +62,7 @@ export const useProducts = () => {
 
   const updateProduct = async (id, formData) => {
     try {
-      const response = await api.products.update(token, id, formData);
+      const response = await api.products.update(id, formData);
       if (response.success) {
         toast.success("Product updated successfully!");
         fetchProducts();
@@ -79,7 +79,7 @@ export const useProducts = () => {
 
   const deleteProduct = async (id) => {
     try {
-      const response = await api.products.delete(token, id);
+      const response = await api.products.delete(id);
       if (response.success) {
         toast.success("Product deleted successfully!");
         fetchProducts();

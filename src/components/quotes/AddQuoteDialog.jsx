@@ -1,63 +1,53 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X, Plus, Trash2, Loader2 } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
-import { useToast } from "../../context/ToastContext";
 import api from "../../services/api";
 import { usePersistedState } from "../../hooks/usePersistedState";
+import ProductSearchSelect from "../common/ProductSearchSelect";
+import toast from "react-hot-toast";
 
-/**
- * Dialog for creating a new manual quote from email requests.
- * Matches backend expectations: customer_name, customer_email, items: [{ product_id, quantity }]
- */
 const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
   const { theme } = useTheme();
-  const { toast } = useToast();
-  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // State for products from API
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productsError, setProductsError] = useState(null);
 
-  const [customerData, setCustomerData, clearCustomerData] = usePersistedState("quote-draft-customer",{
-    name: "",
-    email: "",
-    phone: "",
-    company: "",
-    address: "",
-  });
-
-  const [selectedProducts, setSelectedProducts, clearSelectedProducts] = usePersistedState("quote-draft-products", []);
+  const [customerData, setCustomerData, clearCustomerData] = usePersistedState(
+    "quote-draft-customer",
+    { name: "", email: "", phone: "", company: "", address: "" },
+  );
+  const [selectedProducts, setSelectedProducts, clearSelectedProducts] =
+    usePersistedState("quote-draft-products", []);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  const newProductId = location.state?.newProductId;
 
   const fetchProducts = useCallback(async () => {
     setLoadingProducts(true);
     setProductsError(null);
     try {
-      const result = await api.products.getAll(token, { limit: 1000 });
-      // Handle different response structures
+      const result = await api.products.getAll({ limit: 1000 });
       const data = result.data || result || [];
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
-      setProductsError(err.response?.data?.message || "Failed to load products");
-      // Fallback to empty array
+      setProductsError(
+        err?.message || "Failed to load products",
+      );
       setProducts([]);
     } finally {
       setLoadingProducts(false);
     }
-  }, [token]);
+  }, []);
 
-  // Fetch products from API when dialog opens, but defer the update until after
-  // the render cycle to avoid synchronous state updates during the effect.
   useEffect(() => {
     if (!open) return;
-
-    const timer = setTimeout(() => {
-      void fetchProducts();
-    }, 0);
-
+    const timer = setTimeout(() => void fetchProducts(), 0);
     return () => clearTimeout(timer);
   }, [open, fetchProducts]);
 
@@ -77,8 +67,8 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
   const handleProductChange = (key, field, value) => {
     setSelectedProducts((prev) =>
       prev.map((item) =>
-        item.key === key ? { ...item, [field]: value } : item
-      )
+        item.key === key ? { ...item, [field]: value } : item,
+      ),
     );
   };
 
@@ -91,11 +81,7 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
       setError("Customer name is required");
       return false;
     }
-    if (!customerData.email.trim()) {
-      setError("Customer email is required");
-      return false;
-    }
-    if (!customerData.email.includes("@")) {
+    if (!customerData.email.trim() || !customerData.email.includes("@")) {
       setError("Please enter a valid email address");
       return false;
     }
@@ -122,7 +108,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
 
     setSubmitting(true);
     try {
-      // Format payload to match backend expectations
       const payload = {
         customer_name: customerData.name,
         customer_email: customerData.email,
@@ -135,37 +120,28 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
         })),
       };
 
-      // Use api.quotes.create - no token needed for public create
       const result = await api.quotes.create(payload);
       const newQuote = result.data || result;
 
-      // Reset form
-      setCustomerData({
-        name: "",
-        email: "",
-        phone: "",
-        company: "",
-        address: "",
-      });
+      clearCustomerData();
+      clearSelectedProducts();
+      setCustomerData({ name: "", email: "", phone: "", company: "", address: "" });
       setSelectedProducts([]);
 
       toast.success("Quote created successfully!");
-      clearCustomerData();
-      clearSelectedProducts();
       onQuoteCreated(newQuote);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create quote");
+      setError(err?.message || "Failed to create quote");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Helper to get product display name
-  const getProductDisplay = (product) => {
-    if (!product) return "";
-    return `${product.name} (${product.sku || "No SKU"})`;
-  };
+  // const getProductDisplay = (product) => {
+  //   if (!product) return "";
+  //   return `${product.name} (${product.sku || "No SKU"})`;
+  // };
 
   return createPortal(
     <div
@@ -175,7 +151,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
       onClick={(e) => e.target === e.currentTarget && !submitting && onClose()}
     >
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-[#1A1A1A] rounded-2xl shadow-xl border border-gray-100 dark:border-[#2A2A2A] overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -195,7 +170,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
           </button>
         </div>
 
-        {/* Body */}
         <div className="overflow-y-auto flex-1 p-6 space-y-6">
           {error && (
             <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50">
@@ -203,7 +177,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
             </div>
           )}
 
-          {/* Customer Section */}
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
               Customer Information
@@ -283,7 +256,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
             </div>
           </div>
 
-          {/* Products Section */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -299,7 +271,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
               </button>
             </div>
 
-            {/* Product loading state */}
             {loadingProducts && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-[#C3110C]" />
@@ -309,7 +280,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
               </div>
             )}
 
-            {/* Product error state */}
             {productsError && !loadingProducts && (
               <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50">
                 <p className="text-sm text-red-700 dark:text-red-400">
@@ -324,7 +294,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
               </div>
             )}
 
-            {/* Product selection */}
             {!loadingProducts && !productsError && (
               <div className="space-y-3">
                 {selectedProducts.length === 0 ? (
@@ -332,8 +301,13 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
                     No products added yet. Click "Add Product" to get started.
                   </p>
                 ) : (
-                  selectedProducts.map((item) => {
-                    const selectedProduct = products.find(p => p.id === item.product_id);
+                  selectedProducts.map((item, index) => {
+                    const selectedProduct = products.find(
+                      (p) => String(p.id) === String(item.product_id),
+                    );
+                    const isEmptyRow = !item.product_id;
+                    const shouldAutoSelect = isEmptyRow && newProductId;
+
                     return (
                       <div
                         key={item.key}
@@ -341,23 +315,31 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
                       >
                         <div className="flex-1">
                           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Product
+                            Product {1 + index}
                           </label>
-                          <select
+                          <ProductSearchSelect
+                            products={products}
                             value={item.product_id}
-                            onChange={(e) =>
-                              handleProductChange(item.key, "product_id", e.target.value)
+                            onChange={(newId) =>
+                              handleProductChange(item.key, "product_id", newId)
                             }
+                            defaultSelectId={
+                              shouldAutoSelect ? newProductId : undefined
+                            }
+                            placeholder="Search products by name or SKU…"
                             disabled={submitting}
-                            className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C3110C]"
-                          >
-                            <option value="">Select a product...</option>
-                            {products.map((product) => (
-                              <option key={product.id} value={product.id}>
-                                {getProductDisplay(product)}
-                              </option>
-                            ))}
-                          </select>
+                            required
+                            onAddProduct={() => {
+                              const currentPath =
+                                window.location.pathname + window.location.search;
+                              navigate("/dashboard/products/add", {
+                                state: {
+                                  from: currentPath,
+                                  returnToDialog: "add-quote",
+                                },
+                              });
+                            }}
+                          />
                         </div>
 
                         <div className="w-24">
@@ -372,7 +354,7 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
                               handleProductChange(
                                 item.key,
                                 "quantity",
-                                parseInt(e.target.value, 10) || 1
+                                parseInt(e.target.value, 10) || 1,
                               )
                             }
                             disabled={submitting}
@@ -380,7 +362,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
                           />
                         </div>
 
-                        {/* Show selected product details */}
                         {selectedProduct && (
                           <div className="flex-1 text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                             <div>SKU: {selectedProduct.sku || "—"}</div>
@@ -404,7 +385,6 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-[#2A2A2A] bg-gray-50 dark:bg-[#212121]">
           <button
             onClick={onClose}
@@ -426,7 +406,7 @@ const AddQuoteDialog = ({ open, onClose, onQuoteCreated }) => {
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 

@@ -27,7 +27,7 @@ const TEMPLATE_JSON = [
 const BulkProductUpload = ({ open, onClose, onSuccess }) => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
   const [rows, setRows] = useState([]);
   const [fileName, setFileName] = useState("");
@@ -104,7 +104,7 @@ const BulkProductUpload = ({ open, onClose, onSuccess }) => {
     setValidationErrors([]);
 
     try {
-      const result = await api.products.bulkCreate(token, rows);
+      const result = await api.products.bulkCreate(rows);
       toast.success(result.message || `${rows.length} products created.`);
       onSuccess?.();
       reset();

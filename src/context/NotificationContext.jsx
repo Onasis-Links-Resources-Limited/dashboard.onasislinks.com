@@ -73,7 +73,7 @@ export const NotificationProvider = ({ children }) => {
     );
     setUnread(0);
     try {
-      await api.notifications.markAllRead(token);
+      await api.notifications.markAllRead();
     } catch {
       refresh();
     }
