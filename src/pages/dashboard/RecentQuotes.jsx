@@ -10,9 +10,11 @@ const RecentQuotes = ({ data }) => {
       pending: `bg-yellow-100 text-yellow-800 ${isDark ? "dark:bg-yellow-900/30 dark:text-yellow-400" : ""}`,
       accepted: `bg-green-100 text-green-800 ${isDark ? "dark:bg-green-900/30 dark:text-green-400" : ""}`,
       rejected: `bg-red-100 text-red-800 ${isDark ? "dark:bg-red-900/30 dark:text-red-400" : ""}`,
-      completed: `bg-[#C3110C]/10 text-[#C3110C] ${isDark ? "dark:bg-[#C3110C]/20" : ""}`,
+      completed: `bg-teal-100 text-teal-800 ${isDark ? "dark:bg-teal-900/30 dark:text-teal-300" : ""}`,
       expired: `bg-gray-100 text-gray-700 ${isDark ? "dark:text-gray-400 dark:bg-gray-800" : ""}`,
-      quoted: `bg-orange-100 text-orange-800 ${isDark ? "dark:bg-orange-900/30 dark:text-orange-300" : ""}`,
+      quoted: `bg-indigo-100 text-indigo-800 ${isDark ? "dark:bg-indigo-900/30 dark:text-indigo-300" : ""}`,
+      pending_email_approval: `bg-blue-100 text-blue-800 ${isDark ? "dark:bg-blue-900/30 dark:text-blue-300" : ""}`,
+      pending_pac_approval: `bg-purple-100 text-purple-800 ${isDark ? "dark:bg-purple-900/30 dark:text-purple-300" : ""}`,
     };
     return map[status] || map.pending;
   };
@@ -22,9 +24,11 @@ const RecentQuotes = ({ data }) => {
       pending: "bg-yellow-500",
       accepted: "bg-green-500",
       rejected: "bg-red-500",
-      completed: "bg-[#C3110C]",
+      completed: "bg-teal-500",
       expired: "bg-gray-500",
-      quoted: "bg-orange-500"
+      quoted: "bg-indigo-500",
+      pending_email_approval: "bg-blue-500",
+      pending_pac_approval: "bg-purple-500",
     };
     return map[status] || map.pending;
   };
@@ -124,8 +128,13 @@ const RecentQuotes = ({ data }) => {
                         )}`}
                       ></span>
 
-                      {quote.status.charAt(0).toUpperCase() +
-                        quote.status.slice(1)}
+                      {quote.status
+                        .split("_")
+                        .map(
+                          (part) =>
+                            part.charAt(0).toUpperCase() + part.slice(1),
+                        )
+                        .join(" ")}
                     </span>
                   </td>
                 </tr>
