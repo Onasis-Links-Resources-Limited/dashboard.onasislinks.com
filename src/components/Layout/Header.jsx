@@ -147,7 +147,7 @@ const Header = ({ toggleSidebar }) => {
   };
   const greeting = getGreeting();
 
-  console.log("Unread notifications count:", unreadCount);
+  // console.log("Unread notifications count:", unreadCount);
 
   const handleLogout = async () => {
     await logout();

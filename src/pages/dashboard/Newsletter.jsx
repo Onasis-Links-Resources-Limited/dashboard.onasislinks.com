@@ -150,7 +150,7 @@ const Newsletter = () => {
       setError(null);
 
       try {
-        const result = await api.newsletter.getSubscribers(token, {
+        const result = await api.newsletter.getSubscribers( {
           ...filters,
           page,
           limit,
@@ -178,7 +178,7 @@ const Newsletter = () => {
   // ============================================================
   const fetchStats = useCallback(async () => {
     try {
-      const data = await api.newsletter.getStats(token);
+      const data = await api.newsletter.getStats();
       setStats(data);
     } catch (err) {
       console.error("Failed to load stats:", err);
@@ -209,7 +209,7 @@ const Newsletter = () => {
     if (exporting) return;
     setExporting(true);
     try {
-      const blob = await api.newsletter.exportCSV(token, {
+      const blob = await api.newsletter.exportCSV( {
         status: filters.status,
       });
       const url = URL.createObjectURL(blob);
@@ -234,7 +234,7 @@ const Newsletter = () => {
   const confirmDelete = async () => {
     setDeleting(true);
     try {
-      await api.newsletter.deleteSubscriber(token, deleteTarget.id);
+      await api.newsletter.deleteSubscriber( deleteTarget.id);
       toast.success("Subscriber removed successfully.");
       setDeleteTarget(null);
       setDeleteReason("");

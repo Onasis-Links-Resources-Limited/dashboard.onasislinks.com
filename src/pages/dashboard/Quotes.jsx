@@ -1,15 +1,18 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { useTheme } from "../../context/ThemeContext";
 import QuoteToolbar from "../../components/quotes/QuoteToolbar";
-import QuoteFilters, { DEFAULT_FILTERS } from "../../components/quotes/QuoteFilters";
+import QuoteFilters, {
+  DEFAULT_FILTERS,
+} from "../../components/quotes/QuoteFilters";
 import QuoteTable from "../../components/quotes/QuoteTable";
 import Pagination from "../../components/common/Pagination";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import AddQuoteDialog from "../../components/quotes/AddQuoteDialog";
+import RecordPONumberDialog from "../../components/quotes/RecordPONumberDialog";
 import { cn } from "../../libs/utils";
 
 const hasActiveFilters = (filters) =>
@@ -20,10 +23,11 @@ const hasActiveFilters = (filters) =>
 
 const Quotes = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
   const [quotes, setQuotes] = useState([]);
   const [meta, setMeta] = useState({
@@ -46,6 +50,7 @@ const Quotes = () => {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkReason, setBulkReason] = useState("");
   const [addQuoteDialogOpen, setAddQuoteDialogOpen] = useState(false);
+  const [recordPODialogOpen, setRecordPODialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
@@ -59,21 +64,33 @@ const Quotes = () => {
       setError(null);
 
       try {
-        const result = await api.quotes.getAll(token, { ...filters, page, limit });
+        const result = await api.quotes.getAll({
+          ...filters,
+          page,
+          limit,
+        });
         if (requestId !== requestIdRef.current) return;
-        
+
         // Handle different response structures
         const data = result.data || [];
-        const metaData = result.meta || { total: 0, page: 1, limit: 10, totalPages: 1 };
-        
+        const metaData = result.meta || {
+          total: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+        };
+
         setQuotes(data);
         setMeta(metaData);
         setSelectedIds((prev) =>
-          prev.filter((id) => data.some((q) => q.id === id))
+          prev.filter((id) => data.some((q) => q.id === id)),
         );
       } catch (err) {
         if (requestId !== requestIdRef.current) return;
-        setError(err.response?.data?.message || "Something went wrong while fetching quotes.");
+        setError(
+          err.response?.data?.message ||
+            "Something went wrong while fetching quotes.",
+        );
       } finally {
         if (requestId === requestIdRef.current) {
           setLoading(false);
@@ -81,13 +98,25 @@ const Quotes = () => {
         }
       }
     },
-    [filters, page, limit, token]
+    [filters, page, limit],
   );
 
   useEffect(() => {
     fetchQuotes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, page, limit]);
+
+  useEffect(() => {
+    const returnTo = location.state?.returnToDialog;
+    if (!returnTo) return;
+
+    if (returnTo === "register-po") setRecordPODialogOpen(true);
+    if (returnTo === "add-quote") setAddQuoteDialogOpen(true);
+
+    // ✅ Clear the state so it doesn't re-fire on future navigations
+    navigate(location.pathname, { replace: true, state: {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const handleFiltersChange = (nextFilters) => {
     setFilters(nextFilters);
@@ -103,11 +132,14 @@ const Quotes = () => {
     if (exporting) return;
     setExporting(true);
     try {
-      const blob = await api.quotes.export(token, filters);
+      const blob = await api.quotes.export(filters);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `quotes-export-${new Date().toISOString().slice(0, 10)}.csv`);
+      link.setAttribute(
+        "download",
+        `quotes-export-${new Date().toISOString().slice(0, 10)}.csv`,
+      );
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -122,7 +154,7 @@ const Quotes = () => {
 
   const toggleSelect = (id) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
@@ -131,7 +163,7 @@ const Quotes = () => {
       quotes.length > 0 && quotes.every((q) => selectedIds.includes(q.id));
     if (allOnPageSelected) {
       setSelectedIds((prev) =>
-        prev.filter((id) => !quotes.some((q) => q.id === id))
+        prev.filter((id) => !quotes.some((q) => q.id === id)),
       );
     } else {
       setSelectedIds((prev) => [
@@ -151,9 +183,9 @@ const Quotes = () => {
   const confirmBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await api.quotes.bulkDelete(token, selectedIds);
+      await api.quotes.bulkDelete(selectedIds);
       toast.success(
-        `${selectedIds.length} quote${selectedIds.length > 1 ? "s" : ""} deleted successfully.`
+        `${selectedIds.length} quote${selectedIds.length > 1 ? "s" : ""} deleted successfully.`,
       );
       setSelectedIds([]);
       setBulkDeleteOpen(false);
@@ -169,8 +201,10 @@ const Quotes = () => {
   const confirmDeleteQuote = async () => {
     setDeleting(true);
     try {
-      await api.quotes.delete(token, deleteTarget.id);
-      toast.success(`Quote ${deleteTarget.quoteNumber || deleteTarget.id} deleted successfully.`);
+      await api.quotes.delete(deleteTarget.id);
+      toast.success(
+        `Quote ${deleteTarget.quoteNumber || deleteTarget.id} deleted successfully.`,
+      );
       setDeleteTarget(null);
       setDeleteReason("");
       fetchQuotes({ isRefresh: true });
@@ -183,16 +217,16 @@ const Quotes = () => {
 
   const handleQuoteCreated = (newQuote) => {
     setAddQuoteDialogOpen(false);
-    toast.success(`Quote ${newQuote.quoteNumber || newQuote.id} created successfully!`);
+    toast.success(
+      `Quote ${newQuote.quoteNumber || newQuote.id} created successfully!`,
+    );
     fetchQuotes({ isRefresh: true });
-    setTimeout(() => {
-      navigate(`/dashboard/quotes/${newQuote.id}`);
-    }, 500);
+    navigate(`/dashboard/quotes/${newQuote.id}`);
   };
 
   const cardClasses = cn(
     "border rounded-xl overflow-hidden",
-    isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"
+    isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200",
   );
 
   return (
@@ -200,15 +234,20 @@ const Quotes = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+          <h1
+            className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+          >
             Quotes Management
           </h1>
-          <p className={`mt-1 text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+          <p
+            className={`mt-1 text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+          >
             Track, review and act on customer quote requests.
           </p>
         </div>
         <QuoteToolbar
           onAddQuote={() => setAddQuoteDialogOpen(true)}
+          onRecordPO={() => setRecordPODialogOpen(true)}
           onExport={handleExport}
           onRefresh={handleRefresh}
           onBulkDelete={handleBulkDeleteClick}
@@ -261,7 +300,10 @@ const Quotes = () => {
         danger
         loading={deleting}
         onConfirm={confirmDeleteQuote}
-        onCancel={() => { setDeleteTarget(null); setDeleteReason(""); }}
+        onCancel={() => {
+          setDeleteTarget(null);
+          setDeleteReason("");
+        }}
         reason={deleteReason}
         onReasonChange={setDeleteReason}
         reasonPlaceholder="Optional: Reason for deletion..."
@@ -276,7 +318,10 @@ const Quotes = () => {
         danger
         loading={bulkDeleting}
         onConfirm={confirmBulkDelete}
-        onCancel={() => { setBulkDeleteOpen(false); setBulkReason(""); }}
+        onCancel={() => {
+          setBulkDeleteOpen(false);
+          setBulkReason("");
+        }}
         reason={bulkReason}
         onReasonChange={setBulkReason}
         reasonPlaceholder="Optional: Reason for bulk deletion..."
@@ -287,6 +332,18 @@ const Quotes = () => {
         open={addQuoteDialogOpen}
         onClose={() => setAddQuoteDialogOpen(false)}
         onQuoteCreated={handleQuoteCreated}
+      />
+      <RecordPONumberDialog
+        open={recordPODialogOpen}
+        onClose={() => setRecordPODialogOpen(false)}
+        onPOCreated={(newQuote) => {
+          setRecordPODialogOpen(false);
+          toast.success(
+            `PO Number ${newQuote.purchaseOrder?.poNumber || newQuote.po_number || ""} recorded successfully.`,
+          );
+          fetchQuotes({ isRefresh: true });
+          if (newQuote.id) navigate(`/dashboard/quotes/${newQuote.id}`);
+        }}
       />
     </div>
   );

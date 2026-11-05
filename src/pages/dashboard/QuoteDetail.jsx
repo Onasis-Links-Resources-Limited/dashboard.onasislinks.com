@@ -7,6 +7,7 @@ import {
   Mail,
   CheckCircle,
   AlertCircle,
+  Truck,
 } from "lucide-react";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
@@ -36,6 +37,7 @@ const QuoteDetail = () => {
   const [, setBusy] = useState(false);
   const [isProformaOpen, setIsProformaOpen] = useState(false);
   const [isRecordPOOpen, setIsRecordPOOpen] = useState(false);
+  const [generatingWaybill, setGeneratingWaybill] = useState(false);
   const [resending, setResending] = useState(false);
 
   // ✅ Derived AFTER quote is declared
@@ -49,11 +51,11 @@ const QuoteDetail = () => {
 
     setResending(true);
     try {
-      const result = await api.quotes.resendProforma(token, quote.id);
+      const result = await api.quotes.resendProforma( quote.id);
       if (result.success) {
         toast.success("Proforma email resent successfully!");
         // refresh quote so the banner flips to success
-        const refreshed = await api.quotes.getOne(token, id);
+        const refreshed = await api.quotes.getOne( id);
         setQuote(refreshed.data || refreshed);
       } else {
         toast.error(result.message || "Failed to resend email.");
@@ -73,7 +75,7 @@ const QuoteDetail = () => {
       setError(null);
 
       try {
-        const result = await api.quotes.getOne(token, id);
+        const result = await api.quotes.getOne( id);
         const data = result.data || result;
 
         if (!isActive) return;
@@ -100,10 +102,25 @@ const QuoteDetail = () => {
   const handleStatusChange = async (targetQuote, status) => {
     setBusy(true);
     try {
-      const result = await api.quotes.updateStatus(token, targetQuote.id, status);
+      const result = await api.quotes.updateStatus(
+        targetQuote.id,
+        status,
+      );
       const updated = result.data || result;
       setQuote(updated);
-      toast.success(`Quote ${status} successfully.`);
+      const statusLabel =
+        {
+          pending: "Pending",
+          quoted: "Quoted",
+          accepted: "Accepted",
+          rejected: "Rejected",
+          completed: "Completed",
+          expired: "Expired",
+          pending_email_approval: "Pending Email Approval",
+          pending_pac_approval: "Pending PAC Approval",
+        }[status] || status.replaceAll("_", " ");
+
+      toast.success(`Status updated to ${statusLabel}.`);
     } catch (err) {
       toast.error(err?.message || "Failed to update quote status.");
     } finally {
@@ -114,8 +131,10 @@ const QuoteDetail = () => {
   const handleDelete = async (targetQuote) => {
     setBusy(true);
     try {
-      await api.quotes.delete(token, targetQuote.id);
-      toast.success(`Quote ${targetQuote.quoteNumber || targetQuote.id} deleted successfully.`);
+      await api.quotes.delete( targetQuote.id);
+      toast.success(
+        `Quote ${targetQuote.quoteNumber || targetQuote.id} deleted successfully.`,
+      );
       navigate("/dashboard/quotes");
     } catch (err) {
       toast.error(err?.message || "Failed to delete quote.");
@@ -127,15 +146,17 @@ const QuoteDetail = () => {
   const handleGenerateProforma = async (payload) => {
     setBusy(true);
     try {
-      const result = await api.quotes.generateProforma(token, id, payload);
-      const updatedQuote = result.data?.quote || result.data;
+      const result = await api.quotes.generateProforma( id, payload);
+      const updatedQuote = result.data?.quote || result.data || result.quote;
 
       if (updatedQuote) setQuote(updatedQuote);
       setIsProformaOpen(false);
 
-      if (result.data?.email_sent === false) {
+      if (payload.sendEmail === false) {
+        toast.success("Proforma Invoice generated. It was not sent.");
+      } else if ((result.data?.email_sent ?? result.email_sent) === false) {
         toast.error(
-          `Proforma generated, but email failed to send. ${result.data?.email_error || ""}`,
+          `Proforma generated, but email failed to send. ${result.data?.email_error || result.email_error || ""}`,
           { duration: 8000 },
         );
       } else {
@@ -143,7 +164,9 @@ const QuoteDetail = () => {
       }
     } catch (err) {
       const msg =
-        err?.message || err?.body?.message || "Failed to generate Proforma Invoice.";
+        err?.message ||
+        err?.body?.message ||
+        "Failed to generate Proforma Invoice.";
       toast.error(msg, { duration: 6000 });
       // ✅ Re-throw so QuoteProformaPanel can show the inline error too
       throw err;
@@ -155,7 +178,7 @@ const QuoteDetail = () => {
   const handleRecordPurchaseOrder = async (payload) => {
     setBusy(true);
     try {
-      const result = await api.quotes.recordPO(token, id, payload);
+      const result = await api.quotes.recordPO( id, payload);
       const updated = result.data || result;
       setQuote(updated);
       setIsRecordPOOpen(false);
@@ -166,6 +189,35 @@ const QuoteDetail = () => {
       setBusy(false);
     }
   };
+
+  const handleGenerateWaybill = async () => {
+  if (!token) {
+    toast.error("Your session expired. Please sign in again.");
+    return;
+  }
+
+  setGeneratingWaybill(true);
+  try {
+    const blob = await api.quotes.downloadWaybill( quote.id);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `Waybill-${quote.purchaseOrder?.poNumber || quote.po_number || quote.id}.pdf`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success("Waybill downloaded. It was not emailed.");
+  } catch (err) {
+    toast.error(err?.message || "Failed to generate waybill.");
+  } finally {
+    setGeneratingWaybill(false);
+  }
+};
 
   if (loading) {
     return (
@@ -215,7 +267,9 @@ const QuoteDetail = () => {
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-300">
               Review and manage quote{" "}
-              <span className="font-bold text-[#E6501B]">{quote.quoteNumber}</span>{" "}
+              <span className="font-bold text-[#E6501B]">
+                {quote.quoteNumber}
+              </span>{" "}
               for <span className="font-bold">{quote.customer?.name}</span>.
             </p>
           </div>
@@ -231,7 +285,34 @@ const QuoteDetail = () => {
             </p>
           </div>
           <StatusBadge status={quote.status} />
+          {Boolean(
+            quote.is_registered_po ||
+            quote.source === "registered_po" ||
+            quote.source_type === "registered_po",
+          ) && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2.5 py-1 text-xs font-medium">
+              Direct PO
+            </span>
+          )}
           <QuoteDownloadMenu quote={quote} disabled={!quote.proforma} />
+          {(quote.is_registered_po ||
+            quote.isRegisteredPO ||
+            quote.source === "registered_po" ||
+            quote.source_type === "registered_po" ||
+            quote.purchaseOrder) && (
+            <button
+              onClick={handleGenerateWaybill}
+              disabled={generatingWaybill || !quote.items?.length}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3.5 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-[#212121]"
+            >
+              {generatingWaybill ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Truck className="h-4 w-4" />
+              )}
+              Generate Waybill
+            </button>
+          )}
         </div>
       </div>
 
@@ -289,6 +370,12 @@ const QuoteDetail = () => {
             canDelete={
               quote.status !== "accepted" && quote.status !== "completed"
             }
+            isRegisteredPO={Boolean(
+              quote.is_registered_po ||
+              quote.isRegisteredPO ||
+              quote.source === "registered_po" ||
+              quote.source_type === "registered_po",
+            )}
           />
 
           {quote.proforma && (
@@ -320,7 +407,9 @@ const QuoteDetail = () => {
                     {quote.proforma.sentDate
                       ? new Date(quote.proforma.sentDate).toLocaleString()
                       : quote.proforma.generatedDate
-                        ? new Date(quote.proforma.generatedDate).toLocaleString()
+                        ? new Date(
+                            quote.proforma.generatedDate,
+                          ).toLocaleString()
                         : "—"}
                   </span>
                 </div>
@@ -350,7 +439,7 @@ const QuoteDetail = () => {
                     )}
                   </div>
                 </div>
-              ) : (
+              ) : quote.proforma.emailAttempted ? (
                 <>
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-4">
                     <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -381,10 +470,14 @@ const QuoteDetail = () => {
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Sending...
                         </>
-                      ) : (
+                      ) : quote.proforma.emailAttempted ? (
                         <>
                           <Mail className="w-4 h-4" />
                           Resend Email
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-4 h-4" /> Send Email Now
                         </>
                       )}
                     </button>
@@ -392,6 +485,19 @@ const QuoteDetail = () => {
                     <QuoteDownloadMenu quote={quote} label="Download PDF" />
                   </div>
                 </>
+              ) : (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 mb-4">
+                  <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
+                      Generated but not sent
+                    </p>
+                    <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-1">
+                      This proforma was created without sending an email. Use
+                      Download PDF to share it manually.
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           )}

@@ -1,5 +1,7 @@
 import { useTheme } from '../../context/ThemeContext';
 
+const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
+
 const DataTable = ({
   columns,
   data,
@@ -7,11 +9,15 @@ const DataTable = ({
   totalPages,
   onPageChange,
   itemsPerPage = 5,
+  onItemsPerPageChange,
   totalItems = 0,
   startIndex = 0,
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const pageSizeOptions = Array.from(
+  new Set([...PAGE_SIZE_OPTIONS, itemsPerPage])
+).sort((a, b) => a - b);
 
   return (
     <div className={`overflow-hidden rounded-xl border shadow-sm transition-colors duration-300 ${
@@ -78,10 +84,32 @@ const DataTable = ({
       <div className={`flex flex-col gap-4 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between ${
         isDark ? 'border-gray-700' : 'border-gray-200'
       }`}>
-        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-          Showing {totalItems > 0 ? startIndex + 1 : 0}-
-          {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} items
-        </p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+            Showing {totalItems > 0 ? startIndex + 1 : 0}-
+            {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} items
+          </p>
+
+          {/* ✅ Rows per page */}
+          {onItemsPerPageChange && (
+            <label className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+              <span className="hidden sm:inline">Rows:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+                className={`rounded-lg border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#C3110C] ${
+                  isDark
+                    ? "border-gray-600 bg-[#1A1A1A] text-gray-300"
+                    : "border-gray-300 bg-white text-gray-700"
+                }`}
+              >
+                {pageSizeOptions.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
 
         <div className="flex items-center gap-1">
           <button

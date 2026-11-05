@@ -3,8 +3,8 @@ import { cn } from "../../libs/utils";
 const STATUS_CONFIG = {
   completed: {
     label: "Completed",
-    bg: "bg-green-100 dark:bg-green-900/30",
-    text: "text-green-800 dark:text-green-300",
+    bg: "bg-teal-100 dark:bg-teal-900/30",
+    text: "text-teal-800 dark:text-teal-300",
   },
   expired: {
     label: "Expired",
@@ -13,8 +13,8 @@ const STATUS_CONFIG = {
   },
   quoted: {
     label: "Quoted",
-    bg: "bg-orange-100 dark:bg-orange-900/30",
-    text: "text-orange-800 dark:text-orange-300",
+    bg: "bg-indigo-100 dark:bg-indigo-900/30",
+    text: "text-indigo-800 dark:text-indigo-300",
   },
   pending: {
     label: "Pending",
@@ -25,6 +25,16 @@ const STATUS_CONFIG = {
     label: "Accepted",
     bg: "bg-green-100 dark:bg-green-900/30",
     text: "text-green-800 dark:text-green-300",
+  },
+  pending_email_approval: {
+    label: "Pending Email Approval",
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    text: "text-blue-800 dark:text-blue-300",
+  },
+  pending_pac_approval: {
+    label: "Pending PAC Approval",
+    bg: "bg-purple-100 dark:bg-purple-900/30",
+    text: "text-purple-800 dark:text-purple-300",
   },
   rejected: {
     label: "Rejected",

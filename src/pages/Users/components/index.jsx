@@ -57,7 +57,7 @@ const Users = () => {
     isRefresh ? setRefreshing(true) : setLoading(true);
     setError(null);
     try {
-      const result = await api.users.getAll(token, { ...filters, page, limit });
+      const result = await api.users.getAll( { ...filters, page, limit });
       if (requestId !== requestIdRef.current) return;
       setUsers(result.data);
       setMeta(result.meta);
@@ -101,7 +101,7 @@ const Users = () => {
     if (exporting) return;
     setExporting(true);
     try {
-      const csv = await api.users.exportCSV(token, filters);
+      const csv = await api.users.exportCSV(filters);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -137,7 +137,7 @@ const Users = () => {
   const confirmBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await api.users.bulkDelete(token, selectedIds);
+      await api.users.bulkDelete(selectedIds);
       toast.success(`${selectedIds.length} user(s) deleted.`);
       setSelectedIds([]);
       setBulkDeleteOpen(false);
@@ -152,10 +152,10 @@ const Users = () => {
   const handleSaveUser = async (form) => {
     try {
       if (editingUser) {
-        await api.users.update(token, editingUser.id, form);
+        await api.users.update(editingUser.id, form);
         toast.success("User updated successfully.");
       } else {
-        await api.users.create(token, form);
+        await api.users.create(form);
         toast.success("User created successfully.");
       }
       setFormOpen(false);
@@ -168,7 +168,7 @@ const Users = () => {
 
   const handleStatusChange = async (user, status) => {
     try {
-      await api.users.updateStatus(token, user.id, status);
+      await api.users.updateStatus( user.id, status);
       toast.success(`${user.name}'s status set to ${status}.`);
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status } : u)));
     } catch {
@@ -179,7 +179,7 @@ const Users = () => {
   const confirmDeleteUser = async () => {
     setDeleting(true);
     try {
-      await api.users.delete(token, deleteTarget.id);
+      await api.users.delete( deleteTarget.id);
       toast.success("User deleted successfully.");
       setDeleteTarget(null);
       fetchUsers({ isRefresh: true });

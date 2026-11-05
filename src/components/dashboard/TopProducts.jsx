@@ -13,6 +13,14 @@ import CountUpModule from "react-countup";
 
 const CountUp = CountUpModule.default || CountUpModule;
 
+const PRODUCT_COLORS = [
+   { fill: "#400303", border: "#3A0303", hover: "#330202" },
+  { fill: "#AD360C", border: "#9C310B", hover: "#8A2B0A" },
+  { fill: "#047857", border: "#046C4E", hover: "#036046" },
+  { fill: "#A44200", border: "#943B00", hover: "#833500" },
+  { fill: "#293241", border: "#252D3B", hover: "#212834" },
+];
+
 // Register everything required for a Bar chart
 ChartJS.register(
   CategoryScale,
@@ -20,7 +28,7 @@ ChartJS.register(
   BarController,
   BarElement,
   Tooltip,
-  Legend
+  Legend,
 );
 
 const TopProducts = ({ data = [] }) => {
@@ -44,9 +52,7 @@ const TopProducts = ({ data = [] }) => {
       return name.split(" ")[0];
     });
 
-    const counts = data.map(
-      (item) => Number(item?.quote_count) || 0
-    );
+    const counts = data.map((item) => Number(item?.quote_count) || 0);
 
     chartRef.current = new ChartJS(canvasRef.current, {
       type: "bar",
@@ -59,14 +65,19 @@ const TopProducts = ({ data = [] }) => {
             label: "Quote Count",
             data: counts,
 
-            backgroundColor:
-              "rgba(195, 17, 12, 0.8)",
+            backgroundColor: data.map(
+              (_, index) => PRODUCT_COLORS[index % PRODUCT_COLORS.length].fill,
+            ),
 
-            borderColor: "#C3110C",
+            borderColor: data.map(
+              (_, index) =>
+                PRODUCT_COLORS[index % PRODUCT_COLORS.length].border,
+            ),
             borderWidth: 1,
             borderRadius: 4,
-
-            hoverBackgroundColor: "#E6501B",
+            hoverBackgroundColor: data.map(
+              (_, index) => PRODUCT_COLORS[index % PRODUCT_COLORS.length].hover,
+            ),
           },
         ],
       },
@@ -81,27 +92,18 @@ const TopProducts = ({ data = [] }) => {
           },
 
           tooltip: {
-            backgroundColor: isDark
-              ? "#1A1A1A"
-              : "#FFFFFF",
+            backgroundColor: isDark ? "#1A1A1A" : "#FFFFFF",
 
-            titleColor: isDark
-              ? "#FFFFFF"
-              : "#000000",
+            titleColor: isDark ? "#FFFFFF" : "#000000",
 
-            bodyColor: isDark
-              ? "#CCCCCC"
-              : "#333333",
+            bodyColor: isDark ? "#CCCCCC" : "#333333",
 
-            borderColor: isDark
-              ? "#2A2A2A"
-              : "#E5E7EB",
+            borderColor: isDark ? "#2A2A2A" : "#E5E7EB",
 
             borderWidth: 1,
 
             callbacks: {
-              label: (context) =>
-                ` ${context.parsed.y} quotes`,
+              label: (context) => ` ${context.parsed.y} quotes`,
             },
           },
         },
@@ -111,15 +113,11 @@ const TopProducts = ({ data = [] }) => {
             beginAtZero: true,
 
             grid: {
-              color: isDark
-                ? "rgba(255,255,255,0.05)"
-                : "rgba(0,0,0,0.05)",
+              color: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
             },
 
             ticks: {
-              color: isDark
-                ? "#888888"
-                : "#666666",
+              color: isDark ? "#888888" : "#666666",
 
               precision: 0,
             },
@@ -131,9 +129,7 @@ const TopProducts = ({ data = [] }) => {
             },
 
             ticks: {
-              color: isDark
-                ? "#888888"
-                : "#666666",
+              color: isDark ? "#888888" : "#666666",
             },
           },
         },
@@ -149,9 +145,7 @@ const TopProducts = ({ data = [] }) => {
     };
   }, [data, isDark]);
 
-  const counts = data.map(
-    (item) => Number(item?.quote_count) || 0
-  );
+  const counts = data.map((item) => Number(item?.quote_count) || 0);
 
   const maxCount = Math.max(...counts, 0);
 
@@ -164,11 +158,7 @@ const TopProducts = ({ data = [] }) => {
         hover:border-[#C3110C]
         transition-all duration-300
 
-        ${
-          isDark
-            ? "bg-[#1A1A1A] border-[#2A2A2A]"
-            : "bg-white border-gray-200"
-        }
+        ${isDark ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-gray-200"}
       `}
     >
       <div className="flex items-center justify-between mb-4">
@@ -179,10 +169,7 @@ const TopProducts = ({ data = [] }) => {
             ${isDark ? "text-white" : "text-gray-900"}
           `}
         >
-          <span className="text-[#C3110C] mr-2">
-            ▥
-          </span>
-
+          <span className="text-[#C3110C] mr-2">▥</span>
           Top Products
         </h3>
 
@@ -208,11 +195,7 @@ const TopProducts = ({ data = [] }) => {
             className={`
               h-full flex items-center justify-center
               text-sm
-              ${
-                isDark
-                  ? "text-gray-500"
-                  : "text-gray-400"
-              }
+              ${isDark ? "text-gray-500" : "text-gray-400"}
             `}
           >
             No product data available
@@ -221,22 +204,12 @@ const TopProducts = ({ data = [] }) => {
       </div>
 
       <div className="mt-3 flex justify-center items-center gap-2 text-xs">
-        <span
-          className={
-            isDark
-              ? "text-gray-400"
-              : "text-gray-500"
-          }
-        >
+        <span className={isDark ? "text-gray-400" : "text-gray-500"}>
           Most quoted product
         </span>
 
         <span className="font-bold text-base text-[#C3110C]">
-          <CountUp
-            end={maxCount}
-            duration={2}
-            separator=","
-          />{" "}
+          <CountUp end={maxCount} duration={2} separator="," />{" "}
           {maxCount > 1 ? "quotes" : "quote"}
         </span>
       </div>

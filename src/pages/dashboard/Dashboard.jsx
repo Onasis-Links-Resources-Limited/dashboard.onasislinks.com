@@ -23,11 +23,11 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const token =
-          localStorage.getItem("token");
+        // const token =
+        //   localStorage.getItem("token");
 
         const response =
-          await api.dashboard.getStats(token);
+          await api.dashboard.getStats();
 
         if (response.success) {
           setDashboardData(
