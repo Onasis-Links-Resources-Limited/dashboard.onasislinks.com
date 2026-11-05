@@ -17,7 +17,7 @@ export const useDashboard = () => {
 };
 
 export const DashboardProvider = ({ children }) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token ");
 
   // ----- GLOBAL STATE -----
   const [products, setProducts] = useState([]);

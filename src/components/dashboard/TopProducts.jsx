@@ -14,13 +14,11 @@ import CountUpModule from "react-countup";
 const CountUp = CountUpModule.default || CountUpModule;
 
 const PRODUCT_COLORS = [
-  { fill: "rgba(195, 17, 12, 0.82)", border: "#C3110C", hover: "#E6501B" },
-  { fill: "rgba(37, 99, 235, 0.82)", border: "#2563EB", hover: "#1D4ED8" },
-  { fill: "rgba(5, 150, 105, 0.82)", border: "#059669", hover: "#047857" },
-  { fill: "rgba(217, 119, 6, 0.82)", border: "#D97706", hover: "#B45309" },
-  { fill: "rgba(124, 58, 237, 0.82)", border: "#7C3AED", hover: "#6D28D9" },
-  { fill: "rgba(8, 145, 178, 0.82)", border: "#0891B2", hover: "#0E7490" },
-  { fill: "rgba(219, 39, 119, 0.82)", border: "#DB2777", hover: "#BE185D" },
+   { fill: "#400303", border: "#3A0303", hover: "#330202" },
+  { fill: "#AD360C", border: "#9C310B", hover: "#8A2B0A" },
+  { fill: "#047857", border: "#046C4E", hover: "#036046" },
+  { fill: "#A44200", border: "#943B00", hover: "#833500" },
+  { fill: "#293241", border: "#252D3B", hover: "#212834" },
 ];
 
 // Register everything required for a Bar chart
