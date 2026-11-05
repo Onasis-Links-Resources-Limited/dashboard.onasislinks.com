@@ -2,7 +2,7 @@ import { Mail, Phone, MapPin, Building2 } from "lucide-react";
 
 const InfoRow = ({ icon: Icon, children }) => (
   <div className="flex items-start gap-3 text-sm">
-    <Icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+    <Icon className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
     <span className="text-gray-700 dark:text-gray-300 break-words">
       {children}
     </span>
@@ -14,7 +14,7 @@ const QuoteCustomerInfo = ({ customer }) => {
   if (!customer) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+    <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-gray-800 rounded-xl p-5">
       <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
         Customer Information
       </h2>

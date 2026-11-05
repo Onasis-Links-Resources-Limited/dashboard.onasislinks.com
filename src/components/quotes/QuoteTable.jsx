@@ -1,24 +1,63 @@
-import { Eye, FileDown, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Eye, FileDown, AlertCircle, Loader2 } from "lucide-react";
 import StatusBadge from "../common/StatusBadge";
 import EmptyState from "../common/EmptyState";
 import { TableSkeleton, CardListSkeleton } from "../common/Skeleton.jsx";
 import { formatCurrency } from "../../utils/format";
 import { formatDate } from "../../libs/utils";
-import { downloadProformaPDF } from "./proformaUtils";
 import { useToast } from "../../context/ToastContext";
+import { api } from "../../services/api.js";
 
 const COLUMN_COUNT = 8;
 
 const QuoteRowActions = ({ quote, onView }) => {
   const { toast } = useToast();
+  const [downloading, setDownloading] = useState(false);
+  const token = localStorage.getItem("token");
 
   const handleQuickDownload = async (e) => {
     e.stopPropagation();
+
+    if (!quote.proforma?.number) {
+      toast.error("No proforma invoice available for this quote.");
+      return;
+    }
+
+    if (!token) {
+      toast.error("Your session expired. Please sign in again.");
+      return;
+    }
+
+    setDownloading(true);
+    const loadingToastId = toast.loading?.("Preparing Proforma Invoice…");
+
     try {
-      await downloadProformaPDF(quote);
-      toast.success("Proforma Invoice downloaded as PDF.");
-    } catch {
-      toast.error("Failed to generate PDF.");
+      const blob = await api.quotes.downloadProforma(token, quote.id, "pdf");
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `Proforma-${quote.proforma.number || quote.id}.pdf`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      if (loadingToastId) toast.dismiss?.(loadingToastId);
+      toast.success("Proforma Invoice downloaded.");
+    } catch (err) {
+      if (loadingToastId) toast.dismiss?.(loadingToastId);
+      const message =
+        err?.message === "Failed to fetch"
+          ? "Network error — check your connection and try again."
+          : err?.message || "Failed to download Proforma Invoice.";
+      toast.error(message);
+      console.error("Download error:", err);
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -35,11 +74,16 @@ const QuoteRowActions = ({ quote, onView }) => {
       {quote.proforma && (
         <button
           onClick={handleQuickDownload}
+          disabled={downloading}
           aria-label={`Download proforma invoice for ${quote.id}`}
           title="Download Proforma Invoice (PDF)"
-          className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#C3110C] dark:hover:text-[#E6501B] transition-colors"
+          className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#C3110C] dark:hover:text-[#E6501B] transition-colors disabled:opacity-50"
         >
-          <FileDown className="w-4 h-4" />
+          {downloading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <FileDown className="w-4 h-4" />
+          )}
         </button>
       )}
     </div>
@@ -125,7 +169,7 @@ const QuoteTable = ({
             {quotes.map((quote) => (
               <tr
                 key={quote.id}
-                className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+                className="border-b border-gray-100 dark:border-[#2A2A2A] hover:bg-gray-50 dark:hover:bg-[#212121] transition-colors"
               >
                 <td className="px-4 py-3 w-10">
                   <input
@@ -133,7 +177,7 @@ const QuoteTable = ({
                     checked={selectedIds.includes(quote.id)}
                     onChange={() => onToggleSelect(quote.id)}
                     aria-label={`Select quote ${quote.id}`}
-                    className="rounded border-gray-300 dark:border-gray-600 text-[#C3110C] focus:ring-[#C3110C]"
+                    className="rounded border-gray-300 dark:border-[#2A2A2A] text-[#C3110C] focus:ring-[#C3110C]"
                   />
                 </td>
                 <td className="px-4 py-3">
@@ -141,7 +185,7 @@ const QuoteTable = ({
                     onClick={() => onView(quote)}
                     className="font-mono text-xs font-medium text-[#C3110C] dark:text-[#E6501B] hover:underline"
                   >
-                    {quote.id}
+                    {quote.quoteNumber}
                   </button>
                 </td>
                 <td className="px-4 py-3">
@@ -185,14 +229,14 @@ const QuoteTable = ({
                   checked={selectedIds.includes(quote.id)}
                   onChange={() => onToggleSelect(quote.id)}
                   aria-label={`Select quote ${quote.id}`}
-                  className="mt-1 rounded border-gray-300 dark:border-gray-600 text-[#C3110C] focus:ring-[#C3110C] flex-shrink-0"
+                  className="mt-1 rounded border-gray-300 dark:border-gray-600 text-[#C3110C] focus:ring-[#C3110C] shrink-0"
                 />
                 <div className="min-w-0">
                   <button
                     onClick={() => onView(quote)}
                     className="font-mono text-xs font-medium text-[#C3110C] dark:text-[#E6501B]"
                   >
-                    {quote.id}
+                    {quote.quoteNumber}
                   </button>
                   <div className="text-sm font-medium text-gray-900 dark:text-white truncate mt-0.5">
                     {quote.customer.name}
@@ -239,7 +283,7 @@ const TableHead = ({ allSelected, onToggleSelectAll, disabled = false }) => (
           className="rounded border-gray-300 dark:border-gray-600 text-[#C3110C] focus:ring-[#C3110C]"
         />
       </th>
-      <th className="px-4 py-3">Quote ID</th>
+      <th className="px-4 py-3">Quote Number</th>
       <th className="px-4 py-3">Customer</th>
       <th className="px-4 py-3">Items</th>
       <th className="px-4 py-3">Amount</th>

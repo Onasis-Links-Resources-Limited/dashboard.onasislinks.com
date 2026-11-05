@@ -43,7 +43,7 @@ const QuoteSummary = ({ summary }) => {
 
   if (unpriced) {
     return (
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+      <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-5">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
           Summary
         </h2>
@@ -55,7 +55,7 @@ const QuoteSummary = ({ summary }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+    <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-5">
       <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
         Summary
       </h2>

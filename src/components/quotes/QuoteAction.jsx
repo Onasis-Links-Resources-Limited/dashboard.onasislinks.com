@@ -12,7 +12,7 @@ import ConfirmDialog from "../common/ConfirmDialog";
 export const STATUS_TRANSITIONS = {
   pending: { label: "Pending", allowedActions: ["generateProforma", "reject"] },
   quoted: { label: "Quoted", allowedActions: ["recordPO", "reject"] },
-  approved: { label: "Approved", allowedActions: ["complete"] },
+  accepted: { label: "Accepted", allowedActions: ["complete"] },
   rejected: { label: "Rejected", allowedActions: [] },
   completed: { label: "Completed", allowedActions: [] },
   expired: { label: "Expired", allowedActions: [] },
@@ -59,20 +59,20 @@ const QuoteActions = ({
 
   const dialogConfig = {
     delete: {
-      title: `Delete quote ${quote.id}?`,
+      title: `Delete quote ${quote.quoteNumber}?`,
       description:
         "This will permanently remove this quote. This action cannot be undone.",
       confirmLabel: "Delete",
       danger: true,
     },
     reject: {
-      title: `Reject quote ${quote.id}?`,
-      description: `This will mark quote ${quote.id} as rejected. The customer will be notified.`,
+      title: `Reject quote ${quote.quoteNumber}?`,
+      description: `This will mark quote ${quote.quoteNumber} as rejected. The customer will be notified.`,
       confirmLabel: "Reject",
       danger: true,
     },
     complete: {
-      title: `Mark quote ${quote.id} as completed?`,
+      title: `Mark quote ${quote.quoteNumber} as completed?`,
       description: "This confirms the order has been delivered.",
       confirmLabel: "Mark as Completed",
       danger: false,
@@ -80,7 +80,7 @@ const QuoteActions = ({
   }[pendingAction];
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+    <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-5">
       <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
         Actions
       </h2>

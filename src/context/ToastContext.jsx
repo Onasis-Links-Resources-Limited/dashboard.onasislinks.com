@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useCallback } from "react";
+/* eslint-disable react-refresh/only-export-components -- context and hook intentionally share this module */
+import { createContext, useContext } from "react";
 
 const ToastContext = createContext(null);
 

@@ -5,6 +5,7 @@ import {
   PackageCheck,
   PackageSearch,
   Trash2,
+  AlertCircle,
 } from "lucide-react";
 import ConfirmDialog from "../common/ConfirmDialog";
 
@@ -12,20 +13,12 @@ import ConfirmDialog from "../common/ConfirmDialog";
 export const STATUS_TRANSITIONS = {
   pending: { label: "Pending", allowedActions: ["generateProforma", "reject"] },
   quoted: { label: "Quoted", allowedActions: ["recordPO", "reject"] },
-  approved: { label: "Approved", allowedActions: ["complete"] },
+  accepted: { label: "Accepted", allowedActions: ["complete"] },
   rejected: { label: "Rejected", allowedActions: [] },
   completed: { label: "Completed", allowedActions: [] },
   expired: { label: "Expired", allowedActions: [] },
 };
 
-/**
- * Status-change and delete actions for a quote.
- *
- * `generateProforma` and `recordPO` open dedicated panels (owned by the
- * parent, since they collect more than a yes/no) instead of the inline
- * confirmation dialog used for the simpler `reject` / `complete` / `delete`
- * transitions. The UI only reflects a change after its API call succeeds.
- */
 const QuoteActions = ({
   quote,
   onOpenProforma,
@@ -34,12 +27,16 @@ const QuoteActions = ({
   onDelete,
   canDelete = true,
 }) => {
-  const [pendingAction, setPendingAction] = useState(null); // 'reject' | 'complete' | 'delete'
+  const [pendingAction, setPendingAction] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (!quote) return null;
 
+  const hasItems = (quote.items?.length || 0) > 0;
   const allowedActions = STATUS_TRANSITIONS[quote.status]?.allowedActions || [];
+  const canGenerateProforma = allowedActions.includes("generateProforma") && hasItems;
+  const needsItemsWarning =
+    allowedActions.includes("generateProforma") && !hasItems;
 
   const handleConfirm = async () => {
     setSubmitting(true);
@@ -59,20 +56,20 @@ const QuoteActions = ({
 
   const dialogConfig = {
     delete: {
-      title: `Delete quote ${quote.id}?`,
+      title: `Delete quote ${quote.quoteNumber}?`,
       description:
         "This will permanently remove this quote. This action cannot be undone.",
       confirmLabel: "Delete",
       danger: true,
     },
     reject: {
-      title: `Reject quote ${quote.id}?`,
-      description: `This will mark quote ${quote.id} as rejected. The customer will be notified.`,
+      title: `Reject quote ${quote.quoteNumber}?`,
+      description: `This will mark quote ${quote.quoteNumber} as rejected. The customer will be notified.`,
       confirmLabel: "Reject",
       danger: true,
     },
     complete: {
-      title: `Mark quote ${quote.id} as completed?`,
+      title: `Mark quote ${quote.quoteNumber} as completed?`,
       description: "This confirms the order has been delivered.",
       confirmLabel: "Mark as Completed",
       danger: false,
@@ -80,7 +77,7 @@ const QuoteActions = ({
   }[pendingAction];
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+    <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-5">
       <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
         Actions
       </h2>
@@ -92,7 +89,8 @@ const QuoteActions = ({
           </p>
         )}
 
-        {allowedActions.includes("generateProforma") && (
+        {/* ✅ Only render the proforma button when there are items */}
+        {canGenerateProforma && (
           <button
             onClick={onOpenProforma}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#C3110C] text-white hover:bg-[#a80e0a] transition-colors"
@@ -100,6 +98,22 @@ const QuoteActions = ({
             <FileText className="w-4 h-4" />
             Generate Proforma Invoice
           </button>
+        )}
+
+        {/* ✅ Warning replaces the button, not alongside it */}
+        {needsItemsWarning && (
+          <div className="w-full flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                No items on this quote
+              </p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                A proforma invoice can't be generated. Delete this quote or ask
+                the customer to submit a new request.
+              </p>
+            </div>
+          </div>
         )}
 
         {allowedActions.includes("recordPO") && (

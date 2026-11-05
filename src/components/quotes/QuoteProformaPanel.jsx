@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, FileText } from "lucide-react";
+import { X, FileText, Plus, AlertCircle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
-import { formatMoney } from "./proformaUtils";
 
 const defaultValidUntil = () => {
   const d = new Date();
@@ -10,16 +9,23 @@ const defaultValidUntil = () => {
   return d.toISOString().slice(0, 10);
 };
 
+const formatMoney = (amount) =>
+  new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount || 0);
+
+const TERMS_OPTIONS = [
+  "100% payment before delivery",
+  "Full payment 15 days after delivery",
+  "Ex work",
+];
+
 const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-/**
- * Lets staff assign unit prices to a client's requested items (which arrive
- * unpriced from the website) and generates + sends the Proforma Invoice.
- * Live-calculates subtotal/VAT/total from numeric state only — never from
- * formatted strings — to avoid floating point display errors.
- */
 const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   const { theme } = useTheme();
+
   const [prices, setPrices] = useState(() =>
     Object.fromEntries(
       (quote?.items || []).map((item) => [item.id, item.unitPrice || ""]),
@@ -29,6 +35,33 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
   const [validUntil, setValidUntil] = useState(
     quote?.proforma?.validUntil || defaultValidUntil(),
   );
+  const [error, setError] = useState(null);
+
+  const [selectedTerms, setSelectedTerms] = useState(() => {
+    if (!quote?.notes) return [];
+    const notes = quote.notes;
+    const possibleTerms = notes.split(/[,;]\s*|\n/).filter((t) => t.trim());
+    const recognized = possibleTerms.filter((t) =>
+      TERMS_OPTIONS.includes(t.trim()),
+    );
+    const filtered = recognized.filter(
+      (t) => t !== "50% deposit required before order processing.",
+    );
+    return filtered.map((t) => t.trim());
+  });
+  const [customNotes, setCustomNotes] = useState(() => {
+    if (!quote?.notes) return "";
+    const notes = quote.notes;
+    const possibleTerms = notes.split(/[,;]\s*|\n/).filter((t) => t.trim());
+    const customParts = possibleTerms.filter(
+      (t) => !TERMS_OPTIONS.includes(t.trim()),
+    );
+    const filtered = customParts.filter(
+      (t) => t.trim() !== "50% deposit required before order processing.",
+    );
+    return filtered.join(", ");
+  });
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const items = useMemo(() => quote?.items || [], [quote]);
@@ -50,11 +83,27 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
 
   if (!open || !quote) return null;
 
-  const allPriced = items.every((item) => Number(prices[item.id]) > 0);
+  const hasItems = items.length > 0;
+  const allPriced = hasItems && items.every((item) => Number(prices[item.id]) > 0);
+
+  const buildNotes = () => {
+    const parts = [];
+    if (selectedTerms.length > 0) parts.push(...selectedTerms);
+    if (customNotes.trim()) parts.push(customNotes.trim());
+    return parts.join("\n");
+  };
+
+  const handleTermToggle = (term) => {
+    setSelectedTerms((prev) =>
+      prev.includes(term) ? prev.filter((t) => t !== term) : [...prev, term],
+    );
+  };
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    setError(null);
     try {
+      const notes = buildNotes();
       await onGenerate({
         items: items.map((item) => ({
           id: item.id,
@@ -62,10 +111,63 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
         })),
         discount: Number(discount) || 0,
         validUntil,
+        notes,
       });
+    } catch (err) {
+      setError(err?.message || "Failed to generate proforma invoice.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const parseSpecifications = (specs) => {
+    if (!specs) return null;
+    if (typeof specs === "object") return specs;
+    if (typeof specs === "string") {
+      try {
+        return JSON.parse(specs);
+      } catch {
+        return specs;
+      }
+    }
+    return null;
+  };
+
+  const renderSpecifications = (specs) => {
+    const parsed = parseSpecifications(specs);
+    if (!parsed) return null;
+
+    if (Array.isArray(parsed)) {
+      return (
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
+          {parsed.map((item, index) => (
+            <div key={index} className="flex gap-2">
+              <span className="font-medium capitalize">{item.key}:</span>
+              <span>{item.value}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (typeof parsed === "object") {
+      return (
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
+          {Object.entries(parsed).map(([key, value]) => (
+            <div key={key} className="flex gap-2">
+              <span className="font-medium capitalize">{key}:</span>
+              <span>{String(value)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        {String(parsed)}
+      </div>
+    );
   };
 
   return createPortal(
@@ -74,8 +176,8 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-[#1A1A1A] rounded-2xl shadow-xl border border-gray-100 dark:border-[#2A2A2A] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-[#2A2A2A]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-[#C3110C]/10 dark:bg-[#E6501B]/10 text-[#C3110C] dark:text-[#E6501B] flex items-center justify-center">
               <FileText className="w-4 h-4" />
@@ -85,7 +187,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                 Generate Proforma Invoice
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Quote {quote.id} · {quote.customer.name}
+                Quote {quote.quoteNumber} · {quote.customer.name}
               </p>
             </div>
           </div>
@@ -93,22 +195,38 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
             onClick={onCancel}
             disabled={submitting}
             aria-label="Close"
-            className="p-1 rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+            className="p-1 rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-[#212121] disabled:opacity-40"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="overflow-y-auto p-5 space-y-4">
+          {/* ✅ Empty-state guard */}
+          {!hasItems && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                  This quote has no items
+                </p>
+                <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                  A proforma invoice can't be generated. Close this panel and
+                  delete the quote instead.
+                </p>
+              </div>
+            </div>
+          )}
+
           <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
             Assign a unit price to each requested item. These prices will appear
             on the Proforma Invoice sent to the customer.
           </p>
 
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 dark:border-[#2A2A2A] rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 dark:bg-gray-900/40 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                <tr className="bg-gray-50 dark:bg-[#1A1A1A] text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   <th className="px-3 py-2">Item</th>
                   <th className="px-3 py-2 text-center">Qty</th>
                   <th className="px-3 py-2 w-32">Unit Price (₦)</th>
@@ -119,7 +237,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                 {items.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-t border-gray-100 dark:border-gray-800"
+                    className="border-t border-gray-100 dark:border-[#2A2A2A]"
                   >
                     <td className="px-3 py-2">
                       <div className="font-medium text-gray-900 dark:text-white">
@@ -127,7 +245,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                       </div>
                       {item.specifications && (
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {item.specifications}
+                          {renderSpecifications(item.specifications)}
                         </div>
                       )}
                     </td>
@@ -141,20 +259,15 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                         step="0.01"
                         value={prices[item.id]}
                         onChange={(e) =>
-                          setPrices((p) => ({
-                            ...p,
-                            [item.id]: e.target.value,
-                          }))
+                          setPrices((p) => ({ ...p, [item.id]: e.target.value }))
                         }
                         placeholder="0.00"
                         aria-label={`Unit price for ${item.name}`}
-                        className="w-full border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm px-2 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
+                        className="w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
                       />
                     </td>
                     <td className="px-3 py-2 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                      {formatMoney(
-                        (Number(prices[item.id]) || 0) * item.quantity,
-                      )}
+                      {formatMoney((Number(prices[item.id]) || 0) * item.quantity)}
                     </td>
                   </tr>
                 ))}
@@ -173,7 +286,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                 step="0.01"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
+                className="w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
               />
             </div>
             <div>
@@ -184,12 +297,61 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                 type="date"
                 value={validUntil}
                 onChange={(e) => setValidUntil(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
+                className="w-full border border-gray-200 dark:border-[#2A2A2A] rounded-md bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white text-sm px-2.5 py-1.5 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none"
               />
             </div>
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-4 space-y-1.5 text-sm">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+              Terms &amp; Notes
+            </label>
+
+            <div className="space-y-1.5 mb-2">
+              {TERMS_OPTIONS.map((term) => (
+                <label key={term} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedTerms.includes(term)}
+                    onChange={() => handleTermToggle(term)}
+                    className="w-4 h-4 rounded border-gray-300 text-[#C3110C] focus:ring-[#C3110C]"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {term}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowCustomInput(!showCustomInput)}
+              className="text-xs text-[#C3110C] dark:text-[#E6501B] hover:underline flex items-center gap-1 mb-2"
+            >
+              <Plus className="w-3 h-3" />
+              {showCustomInput ? "Hide custom notes" : "Add custom notes"}
+            </button>
+
+            {showCustomInput && (
+              <textarea
+                value={customNotes}
+                onChange={(e) => setCustomNotes(e.target.value)}
+                placeholder="Enter custom terms and notes that apply to this proforma invoice…"
+                rows={3}
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm px-2.5 py-2 focus:ring-2 focus:ring-[#C3110C] focus:border-transparent outline-none resize-y"
+              />
+            )}
+          </div>
+
+          {/* ✅ Inline error, part of the flow */}
+          {error && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-800 dark:text-red-300">{error}</p>
+            </div>
+          )}
+
+          <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-lg p-4 space-y-1.5 text-sm">
             <div className="flex justify-between text-gray-600 dark:text-gray-300">
               <span>Subtotal</span>
               <span>{formatMoney(subtotal)}</span>
@@ -204,7 +366,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
                 <span>-{formatMoney(discount)}</span>
               </div>
             )}
-            <div className="flex justify-between font-semibold text-gray-900 dark:text-white pt-1.5 mt-1.5 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between font-semibold text-gray-900 dark:text-white pt-1.5 mt-1.5 border-t border-gray-200 dark:border-[#2A2A2A]">
               <span>Total</span>
               <span className="text-[#C3110C] dark:text-[#E6501B]">
                 {formatMoney(total)}
@@ -212,7 +374,7 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
             </div>
           </div>
 
-          {!allPriced && (
+          {hasItems && !allPriced && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
               Every item needs a unit price greater than ₦0 before the Proforma
               Invoice can be sent.
@@ -220,17 +382,17 @@ const QuoteProformaPanel = ({ open, quote, onGenerate, onCancel }) => {
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4 bg-gray-50 dark:bg-gray-900/40 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-end gap-2 px-5 py-4 bg-gray-50 dark:bg-[#1A1A1A] border-t border-gray-100 dark:border-[#2A2A2A]">
           <button
             onClick={onCancel}
             disabled={submitting}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-[#1A1A1A] dark:hover:bg-[#212121] transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            disabled={submitting || !allPriced}
+            disabled={submitting || !allPriced || !hasItems}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#C3110C] text-white hover:bg-[#a80e0a] transition-colors disabled:opacity-50"
           >
             {submitting && (

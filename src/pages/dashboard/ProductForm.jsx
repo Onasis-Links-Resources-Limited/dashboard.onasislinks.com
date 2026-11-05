@@ -1,349 +1,502 @@
 import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
-import toast from 'react-hot-toast';
-import { File, FileText, Image } from "lucide-react";
+import api from "../../services/api";
+import toast from "react-hot-toast";
+import { Package, Upload, Loader2, ArrowLeft, Plus, Trash2, FileText, X } from "lucide-react";
+import { useDashboard } from "../../context/DashboardContext";
 
 const ProductForm = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === "dark";
+  const { createProduct, updateProduct } = useDashboard();
+
+  const isEditMode = !!id;
+  const token = localStorage.getItem("token");
+
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    category_id: "",
+    sku: "",
+    stock_quantity: 0,
+    status: "active",
+  });
+  const [specs, setSpecs] = useState([{ key: "", value: "" }]);
+  const [datasheets, setDatasheets] = useState([]);
+  const [newDatasheetFiles, setNewDatasheetFiles] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [loading, setLoading] = useState(isEditMode);
+  const [categories, setCategories] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const imageInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const pathParts = window.location.pathname.split('/');
-  const id = pathParts[pathParts.length - 1];
-  const isEditMode = id && id !== 'add'; 
+  // Load categories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await api.categories.getAll(token);
+        if (response.success) setCategories(response.data);
+      } catch (error) {
+        console.error("Failed to load categories", error);
+      }
+    };
+    loadCategories();
+  }, []);
 
-  const [formErrors, setFormErrors] = useState({ name: '', category: '', sku: '', stock: '', image: '' });
-
-  const [formData, setFormData] = useState({
-    name: "", description: "", category: "", sku: "", unit: "piece", minOrder: 1, 
-    stock: 0, price: 0, isActive: true,
-    imagePreview: null,
-    specs: [{ name: "Brand", value: "" }, { name: "Model", value: "" }],
-    downloads: [{ name: "Datasheet.pdf" }, { name: "Installation Guide.pdf" }]
-  });
-
-  const [loading, setLoading] = useState(true);
-
+  // Load product for edit
   useEffect(() => {
     if (isEditMode) {
-      try {
-        let stored = JSON.parse(localStorage.getItem("products") || "[]");
-        let foundIndex = stored.findIndex((p) => String(p.id) === String(id));
-        
-        if (foundIndex !== -1) {
-          let found = stored[foundIndex];
-          const urlParams = new URLSearchParams(window.location.search);
-          const reason = urlParams.get('reason');
-
-          let safeStock = 0;
-          let safePrice = 0;
-          let safeMinOrder = 1;
-
-          if (found.stock !== undefined && !isNaN(Number(found.stock))) {
-            safeStock = Number(found.stock);
+      const loadProduct = async () => {
+        try {
+          const response = await api.products.getOne(token, id);
+          if (response.success) {
+            setFormData({
+              name: response.data.name,
+              description: response.data.description || "",
+              category_id: response.data.category_id,
+              sku: response.data.sku,
+              stock_quantity: response.data.stock_quantity,
+              status: response.data.status,
+            });
+            setImagePreview(response.data.image_url);
+            
+            // ✅ Load Specifications
+            if (response.data.specifications && response.data.specifications.length > 0) {
+              setSpecs(response.data.specifications);
+            }
+            
+            // ✅ Load Datasheets
+            if (response.data.datasheets && response.data.datasheets.length > 0) {
+              setDatasheets(response.data.datasheets);
+            }
           }
-          if (found.price !== undefined && !isNaN(Number(found.price))) {
-            safePrice = Number(found.price);
-          }
-          if (found.minOrder !== undefined && !isNaN(Number(found.minOrder))) {
-            safeMinOrder = Number(found.minOrder);
-          }
-          
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setFormData({
-            ...found,
-            stock: safeStock,     
-            price: safePrice,
-            minOrder: safeMinOrder,
-            specs: Array.isArray(found.specs) ? found.specs : [],
-            downloads: Array.isArray(found.downloads) ? found.downloads : [],
-          });
-
-          stored[foundIndex] = {
-            ...found,
-            stock: safeStock,
-            price: safePrice,
-            minOrder: safeMinOrder
-          };
-          localStorage.setItem("products", JSON.stringify(stored));
-
-          if (reason) {
-            toast.success(`Editing product. Reason provided: ${reason}`);
-          }
-        } else {
-          toast.error("Product not found!");
-          window.location.href = "/dashboard/products";
+        } catch {
+          toast.error("Failed to load product");
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error(error);
-      }
+      };
+      loadProduct();
     }
-    setLoading(false);
   }, [id, isEditMode]);
 
-  const preventNegative = (e) => {
-    if (e.key === '-' || e.key === 'e') {
-      e.preventDefault();
-    }
-  };
-
   const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    const finalValue = (type === 'number' && value === '') ? '' : value;
-
-    setFormData(prev => ({ ...prev, [name]: finalValue }));
-    if (formErrors[name]) {
-      setFormErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSpecChange = (index, field, value) => {
-    const newSpecs = [...formData.specs];
-    newSpecs[index][field] = value;
-    setFormData(prev => ({ ...prev, specs: newSpecs }));
-  };
-
-  const addSpec = () => setFormData(prev => ({ ...prev, specs: [...prev.specs, { name: "", value: "" }] }));
-
-  const removeSpec = (index) => {
-    const newSpecs = formData.specs.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, specs: newSpecs }));
-  };
-
-  const removeFile = (index) => {
-    const newDownloads = formData.downloads.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, downloads: newDownloads }));
-  };
-
-  const handleImageClick = () => imageInputRef.current?.click();
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setFormData(prev => ({ ...prev, imagePreview: reader.result }));
-      reader.readAsDataURL(file);
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const handleFileClick = () => fileInputRef.current?.click();
+  // ✅ Handle Spec Changes
+  const handleSpecChange = (index, field, value) => {
+    const updatedSpecs = [...specs];
+    updatedSpecs[index][field] = value;
+    setSpecs(updatedSpecs);
+  };
+
+  const addSpec = () => {
+    setSpecs([...specs, { key: "", value: "" }]);
+  };
+
+  const removeSpec = (index) => {
+    const updatedSpecs = specs.filter((_, i) => i !== index);
+    setSpecs(updatedSpecs);
+  };
+
+  // ✅ Handle Datasheet File Uploads
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({ 
-        ...prev, 
-        downloads: [...prev.downloads, { name: file.name }] 
-      }));
-    }
+    const files = Array.from(e.target.files);
+    setNewDatasheetFiles((prev) => [...prev, ...files]);
   };
 
-  // --- UPDATED SAVE LOGIC ---
-  const handleSubmit = (e) => {
+  const removeNewFile = (index) => {
+    const updatedFiles = newDatasheetFiles.filter((_, i) => i !== index);
+    setNewDatasheetFiles(updatedFiles);
+  };
+
+  const removeExistingDatasheet = (index) => {
+    const updated = datasheets.filter((_, i) => i !== index);
+    setDatasheets(updated);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    let errors = { name: '', category: '', sku: '', stock: '', image: '' };
-    let isValid = true;
-
-    if (!formData.name.trim()) {
-      errors.name = "Product Name is required.";
-      isValid = false;
+    const formDataObj = new FormData();
+    formDataObj.append("name", formData.name);
+    formDataObj.append("description", formData.description);
+    formDataObj.append("category_id", formData.category_id);
+    formDataObj.append("sku", formData.sku);
+    formDataObj.append("stock_quantity", formData.stock_quantity);
+    formDataObj.append("status", formData.status);
+    
+    // ✅ Send Specifications as JSON string
+    formDataObj.append("specifications", JSON.stringify(specs.filter(s => s.key && s.value)));
+    
+    // ✅ Send Existing Datasheets as JSON string (if any)
+    if (datasheets.length > 0) {
+      formDataObj.append("datasheets", JSON.stringify(datasheets));
     }
-    if (!formData.category) {
-      errors.category = "Please select a Category.";
-      isValid = false;
+    
+    // ✅ Send New Datasheet Files
+    newDatasheetFiles.forEach((file) => {
+      formDataObj.append(`datasheet_files`, file);
+    });
+
+    if (imageFile) formDataObj.append("image", imageFile);
+
+    try {
+      let success;
+      if (isEditMode) {
+        success = await updateProduct(id, formDataObj);
+      } else {
+        success = await createProduct(formDataObj);
+      }
+
+      if (success) {
+        navigate("/dashboard/products");
+      }
+    } catch {
+      toast.error("Failed to save product");
+    } finally {
+      setIsSubmitting(false);
     }
-    if (!formData.sku.trim()) {
-      errors.sku = "SKU is required.";
-      isValid = false;
-    }
-
-    // --- NEW VALIDATION CHECKS ---
-    // 1. Image is required
-    if (!formData.imagePreview) {
-      errors.image = "Product Image is required.";
-      isValid = false;
-    }
-
-    // 2. Stock must be at least 1
-    const currentStock = Number(formData.stock) || 0;
-    if (currentStock < 1) {
-      errors.stock = "Stock Quantity must be at least 1.";
-      isValid = false;
-    }
-    // ----------------------------
-
-    if (!isValid) {
-      setFormErrors(errors);
-      toast.error("Please fix the errors highlighted below.");
-      return;
-    }
-
-    const safeStock = Number(formData.stock) || 1;
-    const safePrice = Number(formData.price) || 0;
-    const safeMinOrder = Number(formData.minOrder) || 1;
-
-    const stored = JSON.parse(localStorage.getItem("products") || "[]");
-    let updatedProducts;
-
-    if (isEditMode) {
-      updatedProducts = stored.map((p) => 
-        String(p.id) === String(id) ? { 
-          ...formData, 
-          stock: safeStock, 
-          price: safePrice, 
-          minOrder: safeMinOrder 
-        } : p
-      );
-      toast.success("Product updated successfully!");
-    } else {
-      const nextId = `PRD-${String(Number(stored.length) + 1).padStart(4, '0')}`;
-      
-      const newProduct = {
-        id: nextId,
-        ...formData,
-        stock: safeStock, 
-        price: safePrice, 
-        minOrder: safeMinOrder,
-        createdAt: new Date().toISOString()
-      };
-      updatedProducts = [...stored, newProduct];
-      toast.success("Product added successfully!");
-    }
-
-    localStorage.setItem("products", JSON.stringify(updatedProducts));
-    window.location.href = "/dashboard/products";
   };
 
-  if (loading) {
-    return <div className="p-10 text-center text-gray-500">Loading product data...</div>;
-  }
+  if (loading)
+    return (
+      <div className="p-10 text-center text-gray-500">
+        Loading product data...
+      </div>
+    );
 
   return (
-    <div className={`relative z-10 min-h-screen p-6 transition-colors duration-300`}>
-      
+    <div
+      className={`relative z-10 min-h-screen p-6 transition-colors duration-300`}
+    >
+      <button
+        onClick={() => navigate("/dashboard/products")}
+        className={`mb-6 flex items-center gap-2 text-sm font-medium transition hover:text-[#C3110C] ${isDark ? "text-gray-400" : "text-gray-600"}`}
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to Products
+      </button>
+
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button onClick={() => window.location.href = "/dashboard/products"} className={`text-sm font-medium transition hover:text-[#C3110C] ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>← Back</button>
-          <div>
-            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {isEditMode ? "Edit Product" : "Add New Product"}
-            </h1>
-            {isEditMode && <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Editing ID: {id}</p>}
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => window.location.href = "/dashboard/products"} className={`px-5 py-3 text-sm font-medium rounded-lg border cursor-pointer ${isDark ? 'border-[#2A2A2A] text-gray-300 hover:bg-[#1A1A1A]' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>Cancel</button>
-          <button onClick={handleSubmit} className="cursor-pointer rounded-lg bg-[#C3110C] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#740A03]">Save Changes</button>
-        </div>
+        <h1
+          className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+        >
+          {isEditMode ? "Edit Product" : "Add New Product"}
+        </h1>
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="cursor-pointer rounded-lg bg-[#C3110C] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#740A03] flex items-center gap-2"
+        >
+          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />} Save
+          Changes
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className={`rounded-lg border p-6 shadow-sm ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A]' : 'border-gray-200 bg-white'}`}>
-            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Basic Information</h2>
+          {/* Basic Information */}
+          <div
+            className={`rounded-lg border p-6 shadow-sm ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A]" : "border-gray-200 bg-white"}`}
+          >
+            <h2
+              className={`text-lg font-semibold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}
+            >
+              Basic Information
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ... same as your existing code ... */}
               <div className="md:col-span-2">
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Product Name <span className="text-red-500">*</span></label>
-                <input type="text" name="name" value={formData.name} onChange={handleChange} className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${formErrors.name ? 'border-red-500' : ''} ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white' : 'border-gray-300 bg-white text-gray-900'}`} />
-                {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
-              </div>
-              <div className="md:col-span-2">
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Description</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white' : 'border-gray-300 bg-white text-gray-900'}`}></textarea>
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Category <span className="text-red-500">*</span></label>
-                <select name="category" value={formData.category} onChange={handleChange} className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${formErrors.category ? 'border-red-500' : ''} ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white' : 'border-gray-300 bg-white text-gray-900'}`}>
-                  <option value="">Select Category</option>
-                  <option value="RF Materials">RF Materials</option>
-                  <option value="Power">Power</option>
-                  <option value="Fiber Optical Materials">Fiber Optical Materials</option>
-                  <option value="Miscellaneous">Miscellaneous</option>
-                  <option value="Network Materials">Network Materials</option>
-                </select>
-                {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>SKU <span className="text-red-500">*</span></label>
-                <input type="text" name="sku" value={formData.sku} onChange={handleChange} className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${formErrors.sku ? 'border-red-500' : ''} ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white' : 'border-gray-300 bg-white text-gray-900'}`} />
-                {formErrors.sku && <p className="text-red-500 text-xs mt-1">{formErrors.sku}</p>}
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Price (₦)</label>
-                <input type="number" name="price" value={formData.price} onChange={handleChange} className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white' : 'border-gray-300 bg-white text-gray-900'}`} />
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Stock Quantity <span className="text-red-500">*</span></label>
-                <input 
-                  type="number" 
-                  name="stock" 
-                  min="1"
-                  value={formData.stock} 
-                  onChange={handleChange} 
-                  onKeyDown={preventNegative}
-                  className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${formErrors.stock ? 'border-red-500' : ''} ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white' : 'border-gray-300 bg-white text-gray-900'}`} 
+                <label
+                  className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  Product Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
                 />
-                {formErrors.stock && <p className="text-red-500 text-xs mt-1">{formErrors.stock}</p>}
               </div>
-              <div className="md:col-span-2 flex items-center gap-4 mt-2">
-                <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Active Status</label>
-                <button type="button" onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))} className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${formData.isActive ? 'bg-[#C3110C]' : 'bg-gray-200 dark:bg-[#1A1A1A] dark:border-[#2A2A2A]'}`}>
-                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.isActive ? 'translate-x-5' : 'translate-x-0'}`} />
+              <div className="md:col-span-2">
+                <label
+                  className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows="3"
+                  className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
+                ></textarea>
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="category_id"
+                  value={formData.category_id}
+                  onChange={handleChange}
+                  className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} {cat.is_active ? "" : "(Inactive - Hidden)"}
+                    </option>
+                  ))}
+                </select>
+
+                {formData.category_id &&
+                  categories.find((cat) => cat.id === formData.category_id)
+                    ?.is_active === false && (
+                    <div
+                      className={`mt-2 p-3 rounded-lg text-xs border ${isDark ? "bg-yellow-900/20 text-yellow-200 border-yellow-700/50" : "bg-yellow-50 text-yellow-800 border-yellow-200"}`}
+                    >
+                      ⚠️ <strong>Warning:</strong> This category is currently{" "}
+                      <strong>Inactive</strong>. Products placed here will NOT
+                      be visible to customers on the website.
+                    </div>
+                  )}
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  SKU <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="sku"
+                  value={formData.sku}
+                  onChange={handleChange}
+                  className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  Stock Quantity <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="stock_quantity"
+                  min="0"
+                  value={formData.stock_quantity}
+                  onChange={handleChange}
+                  className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label
+                  className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  Status
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className={`w-full rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="discontinued">Discontinued</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* ✅ Specifications Section */}
+          <div
+            className={`rounded-lg border p-6 shadow-sm ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A]" : "border-gray-200 bg-white"}`}
+          >
+            <h2
+              className={`text-lg font-semibold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}
+            >
+              Specifications
+            </h2>
+            {specs.map((spec, index) => (
+              <div key={index} className="flex gap-3 mb-3">
+                <input
+                  type="text"
+                  placeholder="Spec Name (e.g., Speed)"
+                  value={spec.key}
+                  onChange={(e) => handleSpecChange(index, "key", e.target.value)}
+                  className={`flex-1 rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
+                />
+                <input
+                  type="text"
+                  placeholder="Value (e.g., 300Mbps)"
+                  value={spec.value}
+                  onChange={(e) => handleSpecChange(index, "value", e.target.value)}
+                  className={`flex-1 rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A] text-white" : "border-gray-300 bg-white text-gray-900"}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSpec(index)}
+                  className={`p-2 rounded-lg border transition ${isDark ? "border-[#2A2A2A] text-gray-400 hover:text-red-500 hover:border-red-500" : "border-gray-300 text-gray-400 hover:text-red-500 hover:border-red-500"}`}
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
-                <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formData.isActive ? "Active" : "Inactive"}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className={`rounded-lg border p-6 shadow-sm ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A]' : 'border-gray-200 bg-white'}`}>
-            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Product Image <span className="text-red-500">*</span></h2>
-            <input type="file" ref={imageInputRef} onChange={handleImageChange} accept="image/png, image/jpeg, image/webp" className="hidden" />
-            <div onClick={handleImageClick} className={`border-2 border-dashed rounded-lg p-8 text-center transition hover:border-[#C3110C] cursor-pointer ${formErrors.image ? 'border-red-500' : ''} ${isDark ? 'border-[#2A2A2A] hover:border-[#C3110C]' : 'border-gray-300 hover:border-[#C3110C]'}`}>
-              {formData.imagePreview ? (
-                <img src={formData.imagePreview} alt="Product Preview" className="max-h-40 mx-auto object-contain rounded-md mb-2" />
-              ) : (
-                <>
-                  <div className="mb-2 text-gray-400 mx-auto w-fit"><Image size={40}/></div>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Click or drag to upload</p>
-                </>
-              )}
-            </div>
-            {formErrors.image && <p className="text-red-500 text-xs mt-1">{formErrors.image}</p>}
-          </div>
-        </div>
-
-        <div className="lg:col-span-3">
-          <div className={`rounded-lg border p-6 shadow-sm ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A]' : 'border-gray-200 bg-white'}`}>
-            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Specifications</h2>
-            {formData.specs.map((spec, index) => (
-              <div key={index} className="flex flex-col sm:flex-row gap-3 mb-3">
-                <input type="text" placeholder="Specification Name" value={spec.name} onChange={(e) => handleSpecChange(index, "name", e.target.value)} className={`flex-1 rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white placeholder-gray-400' : 'border-gray-300 bg-white text-gray-900 placeholder-gray-400'}`} />
-                <input type="text" placeholder="Value" value={spec.value} onChange={(e) => handleSpecChange(index, "value", e.target.value)} className={`flex-1 rounded-lg border px-4 py-2 text-sm outline-none focus:border-[#C3110C] ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A] text-white placeholder-gray-400' : 'border-gray-300 bg-white text-gray-900 placeholder-gray-400'}`} />
-                <button type="button" onClick={() => removeSpec(index)} className={`px-3 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition`}>✕</button>
               </div>
             ))}
-            <button type="button" onClick={addSpec} className={`mt-2 text-sm font-medium hover:text-[#C3110C] ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>+ Add Specification</button>
+            <button
+              type="button"
+              onClick={addSpec}
+              className={`flex items-center gap-2 text-sm font-medium mt-2 transition hover:text-[#C3110C] ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            >
+              <Plus className="w-4 h-4" /> Add Specification
+            </button>
+          </div>
+
+          {/* ✅ Datasheets Section */}
+          <div
+            className={`rounded-lg border p-6 shadow-sm ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A]" : "border-gray-200 bg-white"}`}
+          >
+            <h2
+              className={`text-lg font-semibold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}
+            >
+              Datasheets & Downloads
+            </h2>
+            
+            {/* Existing Datasheets */}
+            {datasheets.length > 0 && (
+              <div className="mb-4 space-y-2">
+                {datasheets.map((file, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between p-3 rounded-lg border ${isDark ? "border-[#2A2A2A] bg-[#242424]" : "border-gray-200 bg-gray-50"}`}
+                  >
+                    <span className={`text-sm flex items-center gap-2 truncate ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                      <FileText className="w-4 h-4 flex-shrink-0" /> {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeExistingDatasheet(index)}
+                      className={`p-1 rounded-full transition hover:bg-red-100 dark:hover:bg-red-900/20 ${isDark ? "text-gray-400 hover:text-red-500" : "text-gray-400 hover:text-red-500"}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* New File Upload */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept=".pdf,.doc,.docx,.xls,.xlsx"
+              multiple
+              className="hidden"
+              id="datasheet-upload"
+            />
+            <label
+              htmlFor="datasheet-upload"
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition hover:border-[#C3110C] cursor-pointer block ${isDark ? "border-[#2A2A2A] hover:border-[#C3110C]" : "border-gray-300 hover:border-[#C3110C]"}`}
+            >
+              <div className="mb-2 text-gray-400 mx-auto w-fit">
+                <Upload size={32} />
+              </div>
+              <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                Click to upload PDF, DOC, or XLS files
+              </p>
+            </label>
+
+            {/* Show newly selected files */}
+            {newDatasheetFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {newDatasheetFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between p-3 rounded-lg border ${isDark ? "border-[#2A2A2A] bg-[#242424]" : "border-gray-200 bg-gray-50"}`}
+                  >
+                    <span className={`text-sm flex items-center gap-2 truncate ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                      <FileText className="w-4 h-4 flex-shrink-0" /> {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeNewFile(index)}
+                      className={`p-1 rounded-full transition hover:bg-red-100 dark:hover:bg-red-900/20 ${isDark ? "text-gray-400 hover:text-red-500" : "text-gray-400 hover:text-red-500"}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="lg:col-span-3">
-          <div className={`rounded-lg border p-6 shadow-sm ${isDark ? 'border-[#2A2A2A] bg-[#1A1A1A]' : 'border-gray-200 bg-white'}`}>
-            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Downloads</h2>
-            <div className="space-y-2 mb-4">
-              {formData.downloads.map((file, index) => (
-                <div key={index} className={`flex items-center justify-between p-3 rounded-lg border ${isDark ? 'border-gray-600 bg-[#1A1A1A]' : 'border-gray-200 bg-gray-50'}`}>
-                  <span className={`text-sm flex items-center gap-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}><FileText size={18}/> {file.name}</span>
-                  <button type="button" onClick={() => removeFile(index)} className={`text-sm hover:text-red-500 ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>✕</button>
-                </div>
-              ))}
-            </div>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-            <button type="button" onClick={handleFileClick} className={`cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition ${isDark ? 'border-[#2A2A2A] text-gray-300 hover:bg-[#212121]' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>+ Upload File</button>
+        {/* Right Column - Image */}
+        <div className="space-y-6">
+          <div
+            className={`rounded-lg border p-6 shadow-sm ${isDark ? "border-[#2A2A2A] bg-[#1A1A1A]" : "border-gray-200 bg-white"}`}
+          >
+            <h2
+              className={`text-lg font-semibold mb-4 ${isDark ? "text-white" : "text-gray-900"}`}
+            >
+              Product Image
+            </h2>
+            <input
+              type="file"
+              ref={imageInputRef}
+              onChange={handleImageChange}
+              accept="image/png, image/jpeg, image/webp"
+              className="hidden"
+              id="product-image"
+            />
+            <label
+              htmlFor="product-image"
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition hover:border-[#C3110C] cursor-pointer block ${isDark ? "border-[#2A2A2A] hover:border-[#C3110C]" : "border-gray-300 hover:border-[#C3110C]"}`}
+            >
+              {imagePreview ? (
+                <img
+                  src={imagePreview}
+                  alt="Product Preview"
+                  className="max-h-40 mx-auto object-contain rounded-md mb-2"
+                />
+              ) : (
+                <>
+                  <div className="mb-2 text-gray-400 mx-auto w-fit">
+                    <Package size={40} />
+                  </div>
+                  <p
+                    className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                  >
+                    Click to upload
+                  </p>
+                </>
+              )}
+            </label>
           </div>
         </div>
-
       </div>
     </div>
   );

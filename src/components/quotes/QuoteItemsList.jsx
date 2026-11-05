@@ -2,9 +2,72 @@ import { formatCurrency } from "../../utils/format";
 
 /** Line items for a quote. Table layout on desktop/tablet, cards on mobile. */
 const QuoteItemsList = ({ items = [] }) => {
+  // Helper function to parse specifications
+  const parseSpecifications = (specs) => {
+    if (!specs) return null;
+    
+    // If it's already an object or array, return it
+    if (typeof specs === 'object') return specs;
+    
+    // If it's a string, try to parse it as JSON
+    if (typeof specs === 'string') {
+      try {
+        const parsed = JSON.parse(specs);
+        return parsed;
+      } catch {
+        // If parsing fails, return as plain text
+        return specs;
+      }
+    }
+    
+    return null;
+  };
+
+  // Helper to render specifications
+  const renderSpecifications = (specs) => {
+    const parsed = parseSpecifications(specs);
+    
+    if (!parsed) return null;
+    
+    // If it's an array, render each item
+    if (Array.isArray(parsed)) {
+      return (
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
+          {parsed.map((item, index) => (
+            <div key={index} className="flex gap-2">
+              <span className="font-medium capitalize">{item.key}:</span>
+              <span>{item.value}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    // If it's an object (not array), render key-value pairs
+    if (typeof parsed === 'object') {
+      return (
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
+          {Object.entries(parsed).map(([key, value]) => (
+            <div key={key} className="flex gap-2">
+              <span className="font-medium capitalize">{key}:</span>
+              <span>{String(value)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    // If it's a string, display it directly
+    return (
+      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        {String(parsed)}
+      </div>
+    );
+  };
+
   if (items.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+      <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-5">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
           Items
         </h2>
@@ -16,7 +79,7 @@ const QuoteItemsList = ({ items = [] }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+    <div className="bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden">
       <h2 className="text-sm font-semibold text-gray-900 dark:text-white p-5 pb-0">
         Items
       </h2>
@@ -43,14 +106,11 @@ const QuoteItemsList = ({ items = [] }) => {
                   <div className="font-medium text-gray-900 dark:text-white">
                     {item.name}
                   </div>
-                  {item.specifications && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      {item.specifications}
-                    </div>
-                  )}
+                  {/* Render specifications */}
+                  {renderSpecifications(item.specifications)}
                 </td>
                 <td className="px-5 py-3 font-mono text-xs text-gray-600 dark:text-gray-400">
-                  {item.sku}
+                  {item.sku || "—"}
                 </td>
                 <td className="px-5 py-3 text-gray-700 dark:text-gray-300">
                   {item.quantity}
@@ -89,13 +149,15 @@ const QuoteItemsList = ({ items = [] }) => {
                   {item.name}
                 </p>
                 <p className="font-mono text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  SKU: {item.sku}
+                  SKU: {item.sku || "—"}
                 </p>
-                {item.specifications && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {item.specifications}
-                  </p>
-                )}
+                {/* Render specifications for mobile */}
+                {(() => {
+                  const rendered = renderSpecifications(item.specifications);
+                  return rendered ? (
+                    <div className="mt-0.5">{rendered}</div>
+                  ) : null;
+                })()}
               </div>
               <p className="font-semibold text-gray-900 dark:text-white text-sm whitespace-nowrap">
                 {item.unitPrice > 0 ? (
@@ -108,7 +170,7 @@ const QuoteItemsList = ({ items = [] }) => {
               </p>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Qty {item.quantity} × {formatCurrency(item.unitPrice)}
+              Qty {item.quantity} × {item.unitPrice > 0 ? formatCurrency(item.unitPrice) : "—"}
             </p>
           </div>
         ))}

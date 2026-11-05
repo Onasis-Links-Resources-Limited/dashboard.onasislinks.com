@@ -12,13 +12,13 @@ export const formatNumber = (number) => {
 };
 
 export const formatPercentage = (value) => {
-  return `${Math.round(value)}%`;
+  return `${Math.min(value)}%`;
 };
 
 export const formatStatus = (status) => {
   const statusMap = {
     pending: 'Pending',
-    approved: 'Approved',
+    accepted: 'Accepted',
     rejected: 'Rejected',
     completed: 'Completed',
     active: 'Active',

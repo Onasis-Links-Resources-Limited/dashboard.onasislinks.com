@@ -1,5 +1,3 @@
-import React from "react";
-
 const Pagination = ({
   page = 1,
   totalPages = 1,
@@ -43,7 +41,7 @@ const Pagination = ({
   const pageButtons = buildPageButtons();
 
   return (
-    <div className="flex flex-col gap-3 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 p-4 border-t border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#212121] sm:flex-row sm:items-center sm:justify-between">
       <div className="text-sm text-gray-600 dark:text-gray-300">
         Showing page {page} of {totalPages} · {itemLabel}
       </div>
@@ -52,7 +50,7 @@ const Pagination = ({
         <select
           value={limit}
           onChange={(e) => onLimitChange(Number(e.target.value))}
-          className="border border-gray-300 dark:border-gray-700 rounded px-2 py-1 text-sm bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200"
+          className="border border-gray-300 dark:border-[#2A2A2A] rounded px-2 py-1 text-sm bg-white dark:bg-[#1A1A1A] text-gray-700 dark:text-gray-200"
           aria-label="Results per page"
         >
           <option value={5}>5</option>
@@ -63,7 +61,7 @@ const Pagination = ({
         <button
           onClick={() => onPageChange(1)}
           disabled={page === 1}
-          className="px-3 py-1 border rounded text-sm bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 disabled:opacity-50"
+          className="px-3 py-1 border rounded text-sm bg-white dark:bg-[#1A1A1A] text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#2A2A2A] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           First
         </button>
@@ -71,7 +69,7 @@ const Pagination = ({
         <button
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page === 1}
-          className="px-3 py-1 border rounded text-sm bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 disabled:opacity-50"
+          className="px-3 py-1 border rounded text-sm bg-white dark:bg-[#1A1A1A] text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#2A2A2A] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Prev
         </button>
@@ -92,7 +90,7 @@ const Pagination = ({
               className={`px-3 py-1 border rounded text-sm ${
                 pageNumber === page
                   ? "bg-[#C3110C] text-white border-[#C3110C]"
-                  : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  : "bg-white dark:bg-[#1A1A1A] text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#2A2A2A] hover:bg-gray-50 dark:hover:bg-gray-800"
               } disabled:opacity-50`}
             >
               {pageNumber}
@@ -103,7 +101,7 @@ const Pagination = ({
         <button
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page === totalPages}
-          className="px-3 py-1 border rounded text-sm bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 disabled:opacity-50"
+          className="px-3 py-1 border rounded text-sm bg-white dark:bg-[#1A1A1A] text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#2A2A2A] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>
@@ -111,7 +109,7 @@ const Pagination = ({
         <button
           onClick={() => onPageChange(totalPages)}
           disabled={page === totalPages}
-          className="px-3 py-1 border rounded text-sm bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 disabled:opacity-50"
+          className="px-3 py-1 border rounded text-sm bg-white dark:bg-[#1A1A1A] text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#2A2A2A] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Last
         </button>
