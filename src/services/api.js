@@ -7,14 +7,12 @@ export const api = {
       apiFetch("/auth/staff/login", {
         method: "POST",
         body: { email, password },
-        skipAuth: true,  // no token needed
+        skipAuth: true, // no token needed
       }),
 
-    logout: () =>
-      apiFetch("/auth/logout", { method: "POST" }),
+    logout: () => apiFetch("/auth/logout", { method: "POST" }),
 
-    getProfile: () =>
-      apiFetch("/auth/me"),
+    getProfile: () => apiFetch("/auth/me"),
 
     changePassword: (current_password, new_password) =>
       apiFetch("/auth/change-password", {
@@ -37,7 +35,8 @@ export const api = {
     },
     getOne: (id) => apiFetch(`/users/${id}`),
     create: (data) => apiFetch("/users", { method: "POST", body: data }),
-    update: (id, data) => apiFetch(`/users/${id}`, { method: "PUT", body: data }),
+    update: (id, data) =>
+      apiFetch(`/users/${id}`, { method: "PUT", body: data }),
     updateStatus: (id, status) =>
       apiFetch(`/users/${id}/status`, { method: "PUT", body: { status } }),
     delete: (id) => apiFetch(`/users/${id}`, { method: "DELETE" }),
@@ -63,26 +62,30 @@ export const api = {
       apiFetch("/quotes/register-po", { method: "POST", body: data }),
 
     downloadProforma: (id, format = "pdf") =>
-      apiFetch(`/quotes/${id}/proforma/download?format=${format}`, { raw: true })
-        .then(async (res) => {
-          if (!res.ok) throw new Error(`Download failed (${res.status})`);
-          const blob = await res.blob();
-          if (!blob || blob.size === 0) {
-            throw new Error("The server returned an empty file.");
-          }
-          return blob;
-        }),
+      apiFetch(`/quotes/${id}/proforma/download?format=${format}`, {
+        raw: true,
+      }).then(async (res) => {
+        if (!res.ok) throw new Error(`Download failed (${res.status})`);
+        const blob = await res.blob();
+        if (!blob || blob.size === 0) {
+          throw new Error("The server returned an empty file.");
+        }
+        return blob;
+      }),
 
-    downloadWaybill: (id) =>
-      apiFetch(`/quotes/${id}/waybill/download`, { raw: true })
-        .then(async (res) => {
-          if (!res.ok) throw new Error(`Waybill download failed (${res.status})`);
-          const blob = await res.blob();
-          if (!blob || blob.size === 0) {
-            throw new Error("The server returned an empty waybill.");
-          }
-          return blob;
-        }),
+    downloadWaybill: (id, payload = {}) =>
+      apiFetch(`/quotes/${id}/waybill/download`, {
+        method: "POST",
+        body: payload,
+        raw: true,
+      }).then(async (res) => {
+        if (!res.ok) throw new Error(`Waybill download failed (${res.status})`);
+        const blob = await res.blob();
+        if (!blob || blob.size === 0) {
+          throw new Error("The server returned an empty waybill.");
+        }
+        return blob;
+      }),
 
     resendProforma: (id) =>
       apiFetch(`/quotes/${id}/proforma/resend`, { method: "POST" }),
@@ -104,8 +107,9 @@ export const api = {
       apiFetch("/quotes/bulk-delete", { method: "POST", body: { ids } }),
     export: (params = {}) => {
       const qs = new URLSearchParams(params).toString();
-      return apiFetch(`/quotes/export?${qs}`, { raw: true })
-        .then((res) => res.blob());
+      return apiFetch(`/quotes/export?${qs}`, { raw: true }).then((res) =>
+        res.blob(),
+      );
     },
   },
 
@@ -177,8 +181,9 @@ export const api = {
       apiFetch(`/newsletter/subscribers/${id}`, { method: "DELETE" }),
     exportCSV: (params = {}) => {
       const qs = new URLSearchParams(params).toString();
-      return apiFetch(`/newsletter/export?${qs}`, { raw: true })
-        .then((res) => res.blob());
+      return apiFetch(`/newsletter/export?${qs}`, { raw: true }).then((res) =>
+        res.blob(),
+      );
     },
   },
 
@@ -191,8 +196,7 @@ export const api = {
     unreadCount: () => apiFetch("/notifications/unread-count"),
     markRead: (id) =>
       apiFetch(`/notifications/${id}/read`, { method: "PATCH" }),
-    markAllRead: () =>
-      apiFetch("/notifications/read-all", { method: "PATCH" }),
+    markAllRead: () => apiFetch("/notifications/read-all", { method: "PATCH" }),
   },
 };
 

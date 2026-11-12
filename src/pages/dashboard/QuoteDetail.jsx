@@ -22,6 +22,7 @@ import QuotePurchaseOrderPanel from "../../components/quotes/QuotePurchaseOrderP
 import QuoteDownloadMenu from "../../components/quotes/QuoteDownloadMenu";
 import StatusBadge from "../../components/common/StatusBadge";
 import EmptyState from "../../components/common/EmptyState";
+import WaybillModal from "../../components/quotes/WaybillModal";
 import { formatDate } from "../../libs/utils";
 import { formatCurrency } from "../../utils/format";
 
@@ -38,6 +39,7 @@ const QuoteDetail = () => {
   const [isProformaOpen, setIsProformaOpen] = useState(false);
   const [isRecordPOOpen, setIsRecordPOOpen] = useState(false);
   const [generatingWaybill, setGeneratingWaybill] = useState(false);
+  const [isWaybillModalOpen, setIsWaybillModalOpen] = useState(false);
   const [resending, setResending] = useState(false);
 
   // ✅ Derived AFTER quote is declared
@@ -175,6 +177,32 @@ const QuoteDetail = () => {
     }
   };
 
+  const handleGenerateWaybillSubmit = async ({ staffName, items }) => {
+  setGeneratingWaybill(true);
+  try {
+    const blob = await api.quotes.downloadWaybill(quote.id, { staffName, items });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `Waybill-${quote.purchaseOrder?.poNumber || quote.po_number || quote.id}.pdf`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success("Waybill generated successfully.");
+    setIsWaybillModalOpen(false);
+  } catch (err) {
+    toast.error(err?.message || "Failed to generate waybill.");
+  } finally {
+    setGeneratingWaybill(false);
+  }
+};
+
+
   const handleRecordPurchaseOrder = async (payload) => {
     setBusy(true);
     try {
@@ -190,34 +218,34 @@ const QuoteDetail = () => {
     }
   };
 
-  const handleGenerateWaybill = async () => {
-  if (!token) {
-    toast.error("Your session expired. Please sign in again.");
-    return;
-  }
+//   const handleGenerateWaybill = async () => {
+//   if (!token) {
+//     toast.error("Your session expired. Please sign in again.");
+//     return;
+//   }
 
-  setGeneratingWaybill(true);
-  try {
-    const blob = await api.quotes.downloadWaybill( quote.id);
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute(
-      "download",
-      `Waybill-${quote.purchaseOrder?.poNumber || quote.po_number || quote.id}.pdf`,
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+//   setGeneratingWaybill(true);
+//   try {
+//     const blob = await api.quotes.downloadWaybill( quote.id);
+//     const url = URL.createObjectURL(blob);
+//     const link = document.createElement("a");
+//     link.href = url;
+//     link.setAttribute(
+//       "download",
+//       `Waybill-${quote.purchaseOrder?.poNumber || quote.po_number || quote.id}.pdf`,
+//     );
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+//     URL.revokeObjectURL(url);
 
-    toast.success("Waybill downloaded. It was not emailed.");
-  } catch (err) {
-    toast.error(err?.message || "Failed to generate waybill.");
-  } finally {
-    setGeneratingWaybill(false);
-  }
-};
+//     toast.success("Waybill downloaded. It was not emailed.");
+//   } catch (err) {
+//     toast.error(err?.message || "Failed to generate waybill.");
+//   } finally {
+//     setGeneratingWaybill(false);
+//   }
+// };
 
   if (loading) {
     return (
@@ -301,7 +329,7 @@ const QuoteDetail = () => {
             quote.source_type === "registered_po" ||
             quote.purchaseOrder) && (
             <button
-              onClick={handleGenerateWaybill}
+              onClick={() => setIsWaybillModalOpen(true)}
               disabled={generatingWaybill || !quote.items?.length}
               className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3.5 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-[#212121]"
             >
@@ -312,7 +340,16 @@ const QuoteDetail = () => {
               )}
               Generate Waybill
             </button>
+
+            
           )}
+          <WaybillModal
+  isOpen={isWaybillModalOpen}
+  onClose={() => setIsWaybillModalOpen(false)}
+  quote={quote}
+  onGenerate={handleGenerateWaybillSubmit}
+  loading={generatingWaybill}
+/>
         </div>
       </div>
 
