@@ -11,6 +11,17 @@ import CountUpModule from "react-countup";
 
 const CountUp = CountUpModule.default || CountUpModule;
 
+const STATUS_COLORS = {
+  pending: "#F59E0B",
+  quoted: "#6366F1",
+  accepted: "#10B981",
+  pending_email_approval: "#3B82F6",
+  pending_pac_approval: "#8B5CF6",
+  completed: "#14B8A6",
+  rejected: "#EF4444",
+  expired: "#6B7280",
+};
+
 // Register everything required for Doughnut
 ChartJS.register(ArcElement, DoughnutController, Tooltip, Legend);
 
@@ -22,20 +33,12 @@ const QuoteStatus = ({ data = {} }) => {
   const chartRef = useRef(null);
 
   const statusData = Object.keys(data).map((key) => ({
-    label: key.charAt(0).toUpperCase() + key.slice(1),
-
+    label: key
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" "),
     count: Number(data[key]) || 0,
-
-    color:
-      key === "pending"
-        ? "#F59E0B"
-        : key === "accepted"
-          ? "#10B981"
-          : key === "rejected"
-            ? "#EF4444"
-            : key === "completed"
-              ? "#C3110C"
-              : "#6B7280",
+    color: STATUS_COLORS[key] || "#94A3B8",
   }));
 
   const total = statusData.reduce((sum, item) => sum + item.count, 0);
@@ -111,7 +114,7 @@ const QuoteStatus = ({ data = {} }) => {
         chartRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isDark]);
 
   return (

@@ -3,8 +3,8 @@ import { cn } from "../../libs/utils";
 const STATUS_CONFIG = {
   completed: {
     label: "Completed",
-    bg: "bg-green-100 dark:bg-green-900/30",
-    text: "text-green-800 dark:text-green-300",
+    bg: "bg-teal-100 dark:bg-teal-900/30",
+    text: "text-teal-800 dark:text-teal-300",
   },
   expired: {
     label: "Expired",
@@ -13,8 +13,8 @@ const STATUS_CONFIG = {
   },
   quoted: {
     label: "Quoted",
-    bg: "bg-orange-100 dark:bg-orange-900/30",
-    text: "text-orange-800 dark:text-orange-300",
+    bg: "bg-indigo-100 dark:bg-indigo-900/30",
+    text: "text-indigo-800 dark:text-indigo-300",
   },
   pending: {
     label: "Pending",

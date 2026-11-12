@@ -16,11 +16,11 @@ export const STATUS_TRANSITIONS = {
   accepted: { label: "Accepted", allowedActions: ["complete"] },
   pending_email_approval: {
     label: "Pending Email Approval",
-    allowedActions: ["advancePOStatus"],
+    allowedActions: ["changePOApproval", "complete"],
   },
   pending_pac_approval: {
     label: "Pending PAC Approval",
-    allowedActions: ["complete"],
+    allowedActions: ["changePOApproval", "complete"],
   },
   rejected: { label: "Rejected", allowedActions: [] },
   completed: { label: "Completed", allowedActions: [] },
@@ -43,15 +43,24 @@ const QuoteActions = ({
 
   const hasItems = (quote.items?.length || 0) > 0;
   const allowedActions = STATUS_TRANSITIONS[quote.status]?.allowedActions || [];
-  const nextPOStatus =
+  const approvalStatusOptions =
     quote.status === "accepted"
-      ? "pending_email_approval"
+      ? ["pending_email_approval", "pending_pac_approval"]
       : quote.status === "pending_email_approval"
-        ? "pending_pac_approval"
-        : null;
+        ? ["pending_pac_approval"]
+        : quote.status === "pending_pac_approval"
+          ? ["pending_email_approval"]
+          : [];
+  const approvalStatusLabels = {
+    pending_email_approval: "Pending Email Approval",
+    pending_pac_approval: "Pending PAC Approval",
+  };
   const canComplete =
     allowedActions.includes("complete") &&
-    (!isRegisteredPO || quote.status === "pending_pac_approval");
+    (!isRegisteredPO ||
+      ["pending_email_approval", "pending_pac_approval"].includes(
+        quote.status,
+      ));
   const canGenerateProforma =
     allowedActions.includes("generateProforma") && hasItems;
   const needsItemsWarning =
@@ -145,18 +154,17 @@ const QuoteActions = ({
           </button>
         )}
 
-        {isRegisteredPO && nextPOStatus && (
-          <button
-            onClick={() => onStatusChange(quote, nextPOStatus)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-          >
-            <PackageCheck className="w-4 h-4" />
-            Move to{" "}
-            {nextPOStatus === "pending_email_approval"
-              ? "Pending Email Approval"
-              : "Pending PAC Approval"}
-          </button>
-        )}
+        {isRegisteredPO &&
+          approvalStatusOptions.map((status) => (
+            <button
+              key={status}
+              onClick={() => onStatusChange(quote, status)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            >
+              <PackageCheck className="w-4 h-4" />
+              Move to {approvalStatusLabels[status]}
+            </button>
+          ))}
 
         {canComplete && (
           <button
@@ -168,12 +176,18 @@ const QuoteActions = ({
           </button>
         )}
 
-        {isRegisteredPO && quote.status === "accepted" && (
-          <p className="basis-full text-xs text-gray-500 dark:text-gray-400">
-            Move this registered PO through Email Approval and PAC Approval
-            before completing it.
-          </p>
-        )}
+        {isRegisteredPO &&
+          [
+            "accepted",
+            "pending_email_approval",
+            "pending_pac_approval",
+          ].includes(quote.status) && (
+            <p className="basis-full text-xs text-gray-500 dark:text-gray-400">
+              Email Approval and PAC Approval can be completed in either order.
+              You can also mark the registered PO as completed from either
+              approval status.
+            </p>
+          )}
 
         {allowedActions.includes("reject") && (
           <button
